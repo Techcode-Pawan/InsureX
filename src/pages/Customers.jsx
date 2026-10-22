@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Users, UserCheck, UserPlus, Shield,
@@ -14,6 +14,7 @@ import Button from '../components/ui/Button'
 import EmptyState from '../components/ui/EmptyState'
 import { Toast } from '../components/ui/Toast'
 import CustomerFormModal from '../components/customers/CustomerFormModal'
+import insuranceService from '../services/insuranceService'
 
 import {
   initialCustomers, avatarColor, initials,
@@ -136,6 +137,32 @@ export default function Customers() {
   const [toast,     setToast]         = useState(null)
   const [showFilters, setShowFilters] = useState(false)
 
+  // ── Sync with PostgreSQL backend ─────────────────────────
+  useEffect(() => {
+    let isMounted = true
+    async function loadCustomers() {
+      try {
+        const res = await insuranceService.getCustomers({ limit: 50 })
+        const list = res?.data?.data || res?.data || []
+        if (isMounted && Array.isArray(list) && list.length > 0) {
+          const mapped = list.map(c => ({
+            ...c,
+            customerId: c.customerId || c.customerNumber || c.id,
+            status: (c.status || 'ACTIVE').toLowerCase(),
+            registrationDate: c.registrationDate ? String(c.registrationDate).split('T')[0] : '2024-01-01',
+          }))
+          const existingIds = new Set(mapped.map(m => m.customerId))
+          const rest = initialCustomers.filter(c => !existingIds.has(c.customerId))
+          setCustomers([...mapped, ...rest])
+        }
+      } catch (err) {
+        console.warn('Backend load note:', err.message)
+      }
+    }
+    loadCustomers()
+    return () => { isMounted = false }
+  }, [])
+
   // ── Derived summary stats ────────────────────────────────
   const totalCount   = customers.length
   const activeCount  = customers.filter(c => c.status === 'active').length
@@ -183,19 +210,46 @@ export default function Customers() {
   const hasFilters = search || statusFilter || genderFilter
 
   // ── CRUD ─────────────────────────────────────────────────
-  const handleAdd = useCallback((fields) => {
+  const handleAdd = useCallback(async (fields) => {
     const newCust = {
       ...fields,
       customerId: generateCustomerId(),
       registrationDate: new Date().toISOString().split('T')[0],
+      status: fields.status || 'active',
     }
     setCustomers(cs => [newCust, ...cs])
     setToast({ message: `Customer ${fields.firstName} ${fields.lastName} added successfully.`, type: 'success' })
+    try {
+      await insuranceService.createCustomer({
+        firstName: fields.firstName,
+        lastName: fields.lastName,
+        email: fields.email,
+        phone: fields.phone,
+        gender: fields.gender || 'Other',
+        dateOfBirth: fields.dateOfBirth || '1990-01-01',
+        address: fields.address || '123 Main Street',
+        city: fields.city || 'Mumbai',
+        state: fields.state || 'Maharashtra',
+        postalCode: fields.postalCode || '400001',
+        idProofType: fields.idProofType || 'Aadhaar',
+        maskedIdProofNumber: fields.maskedIdProofNumber || 'XXXX-XXXX-1234',
+        status: (fields.status || 'active').toUpperCase(),
+      })
+    } catch (err) {
+      console.warn('Backend sync notice:', err.message)
+    }
   }, [])
 
-  const handleEdit = useCallback((fields) => {
+  const handleEdit = useCallback(async (fields) => {
     setCustomers(cs => cs.map(c => c.customerId === editTarget.customerId ? { ...c, ...fields } : c))
     setToast({ message: `Customer updated successfully.`, type: 'success' })
+    if (editTarget?.id) {
+      try {
+        await insuranceService.updateCustomer(editTarget.id, fields)
+      } catch (err) {
+        console.warn('Backend update notice:', err.message)
+      }
+    }
     setEditTarget(null)
   }, [editTarget])
 

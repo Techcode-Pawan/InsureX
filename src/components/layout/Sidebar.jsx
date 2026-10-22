@@ -1,9 +1,11 @@
-import { NavLink, useLocation } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { NavLink, useLocation, Link } from 'react-router-dom'
+import { ChevronLeft, ChevronRight, LogIn, LogOut } from 'lucide-react'
 import { navSections } from '../../config/navConfig'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile }) {
   const location = useLocation()
+  const { user, isAuthenticated, logout } = useAuth()
 
   const isActive = (path) => location.pathname === path ||
     (path !== '/dashboard' && location.pathname.startsWith(path))
@@ -63,8 +65,44 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
           ))}
         </nav>
 
-        {/* Footer: collapse toggle */}
-        <div className="sidebar-footer">
+        {/* Footer: Auth & collapse toggle */}
+        <div className="sidebar-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '10px 8px' }}>
+          {isAuthenticated ? (
+            <div className="tooltip-wrapper" style={{ marginBottom: 6 }}>
+              <button
+                className="nav-item btn-ghost"
+                onClick={logout}
+                style={{ width: '100%', justifyContent: collapsed ? 'center' : 'flex-start', color: '#EF4444' }}
+                title="Log out of current account"
+              >
+                <LogOut className="nav-item-icon" size={17} />
+                {!collapsed && (
+                  <span className="nav-item-label" style={{ fontSize: 13 }}>
+                    Sign Out
+                  </span>
+                )}
+              </button>
+              {collapsed && <span className="tooltip">Sign Out ({user?.name || 'User'})</span>}
+            </div>
+          ) : (
+            <div className="tooltip-wrapper" style={{ marginBottom: 6 }}>
+              <Link
+                to="/login"
+                className="nav-item btn-ghost"
+                style={{ width: '100%', justifyContent: collapsed ? 'center' : 'flex-start', color: '#168BFF' }}
+                title="Sign In to access all features"
+              >
+                <LogIn className="nav-item-icon" size={17} />
+                {!collapsed && (
+                  <span className="nav-item-label" style={{ fontSize: 13, fontWeight: 600 }}>
+                    Sign In
+                  </span>
+                )}
+              </Link>
+              {collapsed && <span className="tooltip">Sign In</span>}
+            </div>
+          )}
+
           <div className="tooltip-wrapper">
             <button
               className="nav-item btn-ghost"

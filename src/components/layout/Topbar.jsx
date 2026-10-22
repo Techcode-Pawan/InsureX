@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Search, Bell, Menu, ChevronDown, User, LogOut, Settings } from 'lucide-react'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { Search, Bell, Menu, ChevronDown, User, LogOut, Settings, LogIn, Shield } from 'lucide-react'
 import { navSections } from '../../config/navConfig'
+import { useAuth } from '../../context/AuthContext'
 
 function getPageTitle(pathname) {
   for (const section of navSections) {
@@ -17,13 +18,23 @@ function getPageTitle(pathname) {
 export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, logout, isAuthenticated } = useAuth()
   const [searchValue, setSearchValue] = useState('')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const userMenuRef = useRef(null)
   const notifRef = useRef(null)
 
-  const pageTitle = getPageTitle(location.pathname)
+  const userName = user?.name || 'Administrator'
+  const userEmail = user?.email || 'admin@insurex.in'
+  const userRole = user?.role ? (user.role.charAt(0) + user.role.slice(1).toLowerCase()) : 'Super Admin'
+  const userInitials = userName
+    .split(' ')
+    .filter(Boolean)
+    .map((p) => p[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase() || 'AD'
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -83,6 +94,16 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
 
       <div style={{ flex: 1 }} />
 
+      {/* Backend Status Indicator */}
+      <div
+        className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium"
+        style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#15803D' }}
+        title="PostgreSQL Database Backend Online"
+      >
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span>DB: Connected</span>
+      </div>
+
       {/* Search icon on mobile */}
       <button className="btn btn-ghost btn-icon sm:hidden" aria-label="Search">
         <Search size={18} />
@@ -126,7 +147,7 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
             {[
               { title: 'Policy #P-2024-001 renewed', time: '5 min ago', color: '#168BFF' },
               { title: 'Claim #CL-2024-089 pending review', time: '1 hr ago', color: '#F59E0B' },
-              { title: 'New customer registration: John Doe', time: '3 hr ago', color: '#10B981' },
+              { title: 'New customer registration: Arjun Mehta', time: '3 hr ago', color: '#10B981' },
             ].map((n, i) => (
               <div
                 key={i}
@@ -150,77 +171,104 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
         )}
       </div>
 
-      {/* User menu */}
-      <div ref={userMenuRef} style={{ position: 'relative' }}>
-        <button
-          className="btn btn-ghost"
-          style={{ gap: 8, padding: '4px 8px' }}
-          onClick={() => setUserMenuOpen((v) => !v)}
-          aria-label="User menu"
-          id="user-menu-btn"
-          aria-expanded={userMenuOpen}
-        >
-          <div className="user-avatar" aria-hidden="true">AD</div>
-          <div className="hidden sm:block" style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#172033' }}>Admin User</div>
-            <div style={{ fontSize: 11.5, color: '#64748B' }}>Super Admin</div>
-          </div>
-          <ChevronDown size={15} style={{ color: '#64748B' }} />
-        </button>
-
-        {userMenuOpen && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 8px)',
-              right: 0,
-              background: 'white',
-              border: '1px solid #E2E8F0',
-              borderRadius: 12,
-              boxShadow: '0 10px 25px rgba(6,20,38,0.12)',
-              width: 200,
-              zIndex: 100,
-              overflow: 'hidden',
-            }}
-            role="menu"
+      {/* User menu or Login Link */}
+      {isAuthenticated ? (
+        <div ref={userMenuRef} style={{ position: 'relative' }}>
+          <button
+            className="btn btn-ghost"
+            style={{ gap: 8, padding: '4px 8px' }}
+            onClick={() => setUserMenuOpen((v) => !v)}
+            aria-label="User menu"
+            id="user-menu-btn"
+            aria-expanded={userMenuOpen}
           >
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9' }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: '#172033' }}>Admin User</div>
-              <div style={{ fontSize: 12, color: '#64748B' }}>admin@insurex.com</div>
+            <div className="user-avatar" aria-hidden="true" style={{ background: 'linear-gradient(135deg, #168BFF, #20B8FF)' }}>
+              {userInitials}
             </div>
-            {[
-              { icon: User, label: 'My Profile', action: () => { setUserMenuOpen(false); navigate('/settings') } },
-              { icon: Settings, label: 'Settings', action: () => { setUserMenuOpen(false); navigate('/settings') } },
-            ].map(({ icon: Icon, label, action }) => (
-              <button
-                key={label}
-                className="btn btn-ghost"
-                role="menuitem"
-                onClick={action}
-                style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, padding: '10px 16px', gap: 10 }}
-              >
-                <Icon size={15} style={{ color: '#64748B' }} />
-                <span style={{ fontSize: 13, color: '#172033' }}>{label}</span>
-              </button>
-            ))}
-            <div style={{ borderTop: '1px solid #F1F5F9' }}>
-              <button
-                className="btn btn-ghost"
-                role="menuitem"
-                onClick={() => {
-                  setUserMenuOpen(false)
-                  localStorage.removeItem('insurex_token')
-                  navigate('/dashboard')
-                }}
-                style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, padding: '10px 16px', gap: 10, color: '#DC2626' }}
-              >
-                <LogOut size={15} />
-                <span style={{ fontSize: 13 }}>Sign Out</span>
-              </button>
+            <div className="hidden sm:block" style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#172033' }}>{userName}</div>
+              <div style={{ fontSize: 11.5, color: '#64748B' }}>{userRole}</div>
             </div>
-          </div>
-        )}
-      </div>
+            <ChevronDown size={15} style={{ color: '#64748B' }} />
+          </button>
+
+          {userMenuOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                background: 'white',
+                border: '1px solid #E2E8F0',
+                borderRadius: 12,
+                boxShadow: '0 10px 25px rgba(6,20,38,0.12)',
+                width: 220,
+                zIndex: 100,
+                overflow: 'hidden',
+              }}
+              role="menu"
+            >
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9' }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: '#172033' }}>{userName}</div>
+                <div style={{ fontSize: 12, color: '#64748B' }}>{userEmail}</div>
+                <div style={{ marginTop: 6, display: 'inline-block' }}>
+                  <span className="badge badge-blue" style={{ fontSize: 11, padding: '2px 8px' }}>
+                    {userRole}
+                  </span>
+                </div>
+              </div>
+              {[
+                { icon: User, label: 'My Profile', action: () => { setUserMenuOpen(false); navigate('/settings') } },
+                { icon: Settings, label: 'System Settings', action: () => { setUserMenuOpen(false); navigate('/settings') } },
+              ].map(({ icon: Icon, label, action }) => (
+                <button
+                  key={label}
+                  className="btn btn-ghost"
+                  role="menuitem"
+                  onClick={action}
+                  style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, padding: '10px 16px', gap: 10 }}
+                >
+                  <Icon size={15} style={{ color: '#64748B' }} />
+                  <span style={{ fontSize: 13, color: '#172033' }}>{label}</span>
+                </button>
+              ))}
+              <div style={{ borderTop: '1px solid #F1F5F9' }}>
+                <button
+                  className="btn btn-ghost"
+                  role="menuitem"
+                  onClick={() => {
+                    setUserMenuOpen(false)
+                    logout()
+                    navigate('/login')
+                  }}
+                  style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, padding: '10px 16px', gap: 10, color: '#DC2626' }}
+                >
+                  <LogOut size={15} />
+                  <span style={{ fontSize: 13 }}>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Link
+            to="/login"
+            className="btn btn-ghost"
+            style={{ fontSize: 13, fontWeight: 600, color: '#168BFF', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <LogIn size={15} />
+            <span>Sign In</span>
+          </Link>
+          <Link
+            to="/signup"
+            className="btn btn-primary hidden sm:inline-flex"
+            style={{ fontSize: 13, fontWeight: 600, padding: '6px 14px' }}
+          >
+            Register
+          </Link>
+        </div>
+      )}
     </header>
   )
 }

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
 import AdminLayout from './layouts/AdminLayout'
 import Dashboard from './pages/Dashboard'
 import Customers from './pages/Customers'
@@ -20,37 +21,50 @@ import Renewals from './pages/Renewals'
 import InsuranceCompanies from './pages/InsuranceCompanies'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
 import NotFound from './pages/NotFound'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route element={<AdminLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/customers/:id" element={<CustomerDetails />} />
-          <Route path="/policies" element={<Policies />} />
-          <Route path="/policies/:id" element={<PolicyDetails />} />
-          <Route path="/policy-types" element={<PolicyTypes />} />
-          <Route path="/applications" element={<Applications />} />
-          <Route path="/premiums" element={<Premiums />} />
-          <Route path="/payments" element={<Payments />} />
-          <Route path="/claims" element={<Claims />} />
-          <Route path="/claims/:id" element={<ClaimDetails />} />
-          <Route path="/claim-processing" element={<ClaimProcessing />} />
-          <Route path="/agents" element={<Agents />} />
-          <Route path="/agents/:id" element={<AgentDetails />} />
-          <Route path="/beneficiaries" element={<Beneficiaries />} />
-          <Route path="/documents" element={<Documents />} />
-          <Route path="/renewals" element={<Renewals />} />
-          <Route path="/insurance-companies" element={<InsuranceCompanies />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Root redirect */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+          {/* Admin / Portal Routes */}
+          <Route element={<AdminLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/customers/:id" element={<CustomerDetails />} />
+            <Route path="/policies" element={<Policies />} />
+            <Route path="/policies/:id" element={<PolicyDetails />} />
+            <Route path="/policy-types" element={<PolicyTypes />} />
+            <Route path="/applications" element={<Applications />} />
+            <Route path="/premiums" element={<Premiums />} />
+            <Route path="/payments" element={<Payments />} />
+            <Route path="/claims" element={<Claims />} />
+            <Route path="/claims/:id" element={<ClaimDetails />} />
+            <Route path="/claim-processing" element={<ClaimProcessing />} />
+            <Route path="/agents" element={<Agents />} />
+            <Route path="/agents/:id" element={<AgentDetails />} />
+            <Route path="/beneficiaries" element={<Beneficiaries />} />
+            <Route path="/documents" element={<Documents />} />
+            <Route path="/renewals" element={<Renewals />} />
+            <Route path="/insurance-companies" element={<InsuranceCompanies />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
