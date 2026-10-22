@@ -1,0 +1,3915 @@
+{
+  "dbInfo": {
+    "current_database": "insurex_db",
+    "current_user": "postgres",
+    "inet_server_addr": "::1",
+    "inet_server_port": 5432,
+    "version": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35227, 64-bit"
+  },
+  "tables": [
+    "Beneficiary",
+    "Claim",
+    "ClaimProcessing",
+    "Customer",
+    "Document",
+    "InsuranceAgent",
+    "InsuranceApplication",
+    "InsuranceCompany",
+    "InsurancePolicy",
+    "PolicyRenewal",
+    "PolicyType",
+    "Premium",
+    "PremiumPayment",
+    "User",
+    "_prisma_migrations"
+  ],
+  "tableCounts": {
+    "Beneficiary": 2,
+    "Claim": 1,
+    "ClaimProcessing": 1,
+    "Customer": 2,
+    "Document": 1,
+    "InsuranceAgent": 1,
+    "InsuranceApplication": 1,
+    "InsuranceCompany": 2,
+    "InsurancePolicy": 1,
+    "PolicyRenewal": 1,
+    "PolicyType": 3,
+    "Premium": 1,
+    "PremiumPayment": 1,
+    "User": 5,
+    "_prisma_migrations": 2
+  },
+  "foreignKeys": [
+    {
+      "table_name": "Beneficiary",
+      "column_name": "policyId",
+      "foreign_table_name": "InsurancePolicy",
+      "foreign_column_name": "id",
+      "delete_rule": "CASCADE",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "assignedAgentId",
+      "foreign_table_name": "InsuranceAgent",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "customerId",
+      "foreign_table_name": "Customer",
+      "foreign_column_name": "id",
+      "delete_rule": "RESTRICT",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "policyId",
+      "foreign_table_name": "InsurancePolicy",
+      "foreign_column_name": "id",
+      "delete_rule": "RESTRICT",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "assignedAgentId",
+      "foreign_table_name": "InsuranceAgent",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "claimId",
+      "foreign_table_name": "Claim",
+      "foreign_column_name": "id",
+      "delete_rule": "CASCADE",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "userId",
+      "foreign_table_name": "User",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "Document",
+      "column_name": "claimId",
+      "foreign_table_name": "Claim",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "Document",
+      "column_name": "customerId",
+      "foreign_table_name": "Customer",
+      "foreign_column_name": "id",
+      "delete_rule": "RESTRICT",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "Document",
+      "column_name": "policyId",
+      "foreign_table_name": "InsurancePolicy",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "companyId",
+      "foreign_table_name": "InsuranceCompany",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "userId",
+      "foreign_table_name": "User",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "customerId",
+      "foreign_table_name": "Customer",
+      "foreign_column_name": "id",
+      "delete_rule": "RESTRICT",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "policyTypeId",
+      "foreign_table_name": "PolicyType",
+      "foreign_column_name": "id",
+      "delete_rule": "RESTRICT",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "agentId",
+      "foreign_table_name": "InsuranceAgent",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "applicationId",
+      "foreign_table_name": "InsuranceApplication",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "companyId",
+      "foreign_table_name": "InsuranceCompany",
+      "foreign_column_name": "id",
+      "delete_rule": "SET NULL",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "customerId",
+      "foreign_table_name": "Customer",
+      "foreign_column_name": "id",
+      "delete_rule": "RESTRICT",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "policyTypeId",
+      "foreign_table_name": "PolicyType",
+      "foreign_column_name": "id",
+      "delete_rule": "RESTRICT",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "policyId",
+      "foreign_table_name": "InsurancePolicy",
+      "foreign_column_name": "id",
+      "delete_rule": "CASCADE",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "policyId",
+      "foreign_table_name": "InsurancePolicy",
+      "foreign_column_name": "id",
+      "delete_rule": "CASCADE",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "policyId",
+      "foreign_table_name": "InsurancePolicy",
+      "foreign_column_name": "id",
+      "delete_rule": "RESTRICT",
+      "update_rule": "CASCADE"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "premiumId",
+      "foreign_table_name": "Premium",
+      "foreign_column_name": "id",
+      "delete_rule": "RESTRICT",
+      "update_rule": "CASCADE"
+    }
+  ],
+  "checkConstraints": [
+    {
+      "table_name": "Beneficiary",
+      "constraint_name": "Beneficiary_allocationPercentage_not_null",
+      "check_clause": "allocationPercentage IS NOT NULL"
+    },
+    {
+      "table_name": "Beneficiary",
+      "constraint_name": "Beneficiary_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "Beneficiary",
+      "constraint_name": "Beneficiary_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "Beneficiary",
+      "constraint_name": "Beneficiary_name_not_null",
+      "check_clause": "name IS NOT NULL"
+    },
+    {
+      "table_name": "Beneficiary",
+      "constraint_name": "Beneficiary_policyId_not_null",
+      "check_clause": "policyId IS NOT NULL"
+    },
+    {
+      "table_name": "Beneficiary",
+      "constraint_name": "Beneficiary_relationship_not_null",
+      "check_clause": "relationship IS NOT NULL"
+    },
+    {
+      "table_name": "Beneficiary",
+      "constraint_name": "Beneficiary_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "Beneficiary",
+      "constraint_name": "chk_beneficiary_allocation",
+      "check_clause": "((\"allocationPercentage\" > (0)::numeric) AND (\"allocationPercentage\" <= (100)::numeric))"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_claimDate_not_null",
+      "check_clause": "claimDate IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_claimNumber_not_null",
+      "check_clause": "claimNumber IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_claimType_not_null",
+      "check_clause": "claimType IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_claimedAmount_not_null",
+      "check_clause": "claimedAmount IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_customerId_not_null",
+      "check_clause": "customerId IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_incidentDescription_not_null",
+      "check_clause": "incidentDescription IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_policyId_not_null",
+      "check_clause": "policyId IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "Claim_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "chk_claim_approved_amount",
+      "check_clause": "((\"approvedAmount\" IS NULL) OR ((\"approvedAmount\" >= (0)::numeric) AND (\"approvedAmount\" <= \"claimedAmount\")))"
+    },
+    {
+      "table_name": "Claim",
+      "constraint_name": "chk_claim_claimed_amount",
+      "check_clause": "(\"claimedAmount\" > (0)::numeric)"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "constraint_name": "ClaimProcessing_claimId_not_null",
+      "check_clause": "claimId IS NOT NULL"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "constraint_name": "ClaimProcessing_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "constraint_name": "ClaimProcessing_documentsVerified_not_null",
+      "check_clause": "documentsVerified IS NOT NULL"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "constraint_name": "ClaimProcessing_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "constraint_name": "ClaimProcessing_processingDate_not_null",
+      "check_clause": "processingDate IS NOT NULL"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "constraint_name": "ClaimProcessing_processingStatus_not_null",
+      "check_clause": "processingStatus IS NOT NULL"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "constraint_name": "ClaimProcessing_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "constraint_name": "ClaimProcessing_verificationStatus_not_null",
+      "check_clause": "verificationStatus IS NOT NULL"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "constraint_name": "chk_claimproc_approved_amount",
+      "check_clause": "((\"approvedAmount\" IS NULL) OR (\"approvedAmount\" >= (0)::numeric))"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_address_not_null",
+      "check_clause": "address IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_city_not_null",
+      "check_clause": "city IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_customerNumber_not_null",
+      "check_clause": "customerNumber IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_dateOfBirth_not_null",
+      "check_clause": "dateOfBirth IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_email_not_null",
+      "check_clause": "email IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_firstName_not_null",
+      "check_clause": "firstName IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_gender_not_null",
+      "check_clause": "gender IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_idProofType_not_null",
+      "check_clause": "idProofType IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_lastName_not_null",
+      "check_clause": "lastName IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_maskedIdProofNumber_not_null",
+      "check_clause": "maskedIdProofNumber IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_phone_not_null",
+      "check_clause": "phone IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_postalCode_not_null",
+      "check_clause": "postalCode IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_registrationDate_not_null",
+      "check_clause": "registrationDate IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_state_not_null",
+      "check_clause": "state IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "Customer",
+      "constraint_name": "Customer_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "Document",
+      "constraint_name": "Document_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "Document",
+      "constraint_name": "Document_customerId_not_null",
+      "check_clause": "customerId IS NOT NULL"
+    },
+    {
+      "table_name": "Document",
+      "constraint_name": "Document_documentNumber_not_null",
+      "check_clause": "documentNumber IS NOT NULL"
+    },
+    {
+      "table_name": "Document",
+      "constraint_name": "Document_documentType_not_null",
+      "check_clause": "documentType IS NOT NULL"
+    },
+    {
+      "table_name": "Document",
+      "constraint_name": "Document_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "Document",
+      "constraint_name": "Document_name_not_null",
+      "check_clause": "name IS NOT NULL"
+    },
+    {
+      "table_name": "Document",
+      "constraint_name": "Document_submissionDate_not_null",
+      "check_clause": "submissionDate IS NOT NULL"
+    },
+    {
+      "table_name": "Document",
+      "constraint_name": "Document_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "Document",
+      "constraint_name": "Document_verificationStatus_not_null",
+      "check_clause": "verificationStatus IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_agentNumber_not_null",
+      "check_clause": "agentNumber IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_city_not_null",
+      "check_clause": "city IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_commissionRate_not_null",
+      "check_clause": "commissionRate IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_email_not_null",
+      "check_clause": "email IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_firstName_not_null",
+      "check_clause": "firstName IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_joiningDate_not_null",
+      "check_clause": "joiningDate IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_lastName_not_null",
+      "check_clause": "lastName IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_licenseNumber_not_null",
+      "check_clause": "licenseNumber IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_phone_not_null",
+      "check_clause": "phone IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_rating_not_null",
+      "check_clause": "rating IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_region_not_null",
+      "check_clause": "region IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_specialization_not_null",
+      "check_clause": "specialization IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "InsuranceAgent_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "chk_agent_commission",
+      "check_clause": "((\"commissionRate\" >= (0)::numeric) AND (\"commissionRate\" <= (100)::numeric))"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "constraint_name": "chk_agent_rating",
+      "check_clause": "((rating >= (0)::numeric) AND (rating <= (5)::numeric))"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "InsuranceApplication_applicationDate_not_null",
+      "check_clause": "applicationDate IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "InsuranceApplication_applicationNumber_not_null",
+      "check_clause": "applicationNumber IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "InsuranceApplication_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "InsuranceApplication_customerId_not_null",
+      "check_clause": "customerId IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "InsuranceApplication_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "InsuranceApplication_policyTypeId_not_null",
+      "check_clause": "policyTypeId IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "InsuranceApplication_requestedCoverage_not_null",
+      "check_clause": "requestedCoverage IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "InsuranceApplication_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "InsuranceApplication_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "chk_app_annual_income",
+      "check_clause": "((\"annualIncome\" IS NULL) OR (\"annualIncome\" >= (0)::numeric))"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "constraint_name": "chk_app_requested_coverage",
+      "check_clause": "(\"requestedCoverage\" > (0)::numeric)"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_address_not_null",
+      "check_clause": "address IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_category_not_null",
+      "check_clause": "category IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_city_not_null",
+      "check_clause": "city IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_email_not_null",
+      "check_clause": "email IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_name_not_null",
+      "check_clause": "name IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_phone_not_null",
+      "check_clause": "phone IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_postalCode_not_null",
+      "check_clause": "postalCode IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_registrationNumber_not_null",
+      "check_clause": "registrationNumber IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_state_not_null",
+      "check_clause": "state IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "InsuranceCompany_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "constraint_name": "chk_company_solvency",
+      "check_clause": "((\"solvencyRatio\" IS NULL) OR (\"solvencyRatio\" >= (0)::numeric))"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_customerId_not_null",
+      "check_clause": "customerId IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_expiryDate_not_null",
+      "check_clause": "expiryDate IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_policyNumber_not_null",
+      "check_clause": "policyNumber IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_policyTypeId_not_null",
+      "check_clause": "policyTypeId IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_premiumAmount_not_null",
+      "check_clause": "premiumAmount IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_premiumFrequency_not_null",
+      "check_clause": "premiumFrequency IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_startDate_not_null",
+      "check_clause": "startDate IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_sumAssured_not_null",
+      "check_clause": "sumAssured IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "InsurancePolicy_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "chk_policy_date_range",
+      "check_clause": "(\"startDate\" < \"expiryDate\")"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "chk_policy_premium_amount",
+      "check_clause": "(\"premiumAmount\" > (0)::numeric)"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "constraint_name": "chk_policy_sum_assured",
+      "check_clause": "(\"sumAssured\" > (0)::numeric)"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_newExpiryDate_not_null",
+      "check_clause": "newExpiryDate IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_newStartDate_not_null",
+      "check_clause": "newStartDate IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_policyId_not_null",
+      "check_clause": "policyId IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_previousExpiryDate_not_null",
+      "check_clause": "previousExpiryDate IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_renewalNumber_not_null",
+      "check_clause": "renewalNumber IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_renewalPremium_not_null",
+      "check_clause": "renewalPremium IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "PolicyRenewal_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "chk_renewal_dates",
+      "check_clause": "((\"newStartDate\" < \"newExpiryDate\") AND (\"newStartDate\" >= \"previousExpiryDate\"))"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "constraint_name": "chk_renewal_premium",
+      "check_clause": "(\"renewalPremium\" > (0)::numeric)"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_coverageDetails_not_null",
+      "check_clause": "coverageDetails IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_description_not_null",
+      "check_clause": "description IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_eligibility_not_null",
+      "check_clause": "eligibility IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_name_not_null",
+      "check_clause": "name IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_terms_not_null",
+      "check_clause": "terms IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_typeCode_not_null",
+      "check_clause": "typeCode IS NOT NULL"
+    },
+    {
+      "table_name": "PolicyType",
+      "constraint_name": "PolicyType_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "Premium_amount_not_null",
+      "check_clause": "amount IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "Premium_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "Premium_dueDate_not_null",
+      "check_clause": "dueDate IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "Premium_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "Premium_paidAmount_not_null",
+      "check_clause": "paidAmount IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "Premium_policyId_not_null",
+      "check_clause": "policyId IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "Premium_premiumNumber_not_null",
+      "check_clause": "premiumNumber IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "Premium_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "Premium_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "chk_premium_amount",
+      "check_clause": "(amount > (0)::numeric)"
+    },
+    {
+      "table_name": "Premium",
+      "constraint_name": "chk_premium_paid_amount",
+      "check_clause": "((\"paidAmount\" >= (0)::numeric) AND (\"paidAmount\" <= amount))"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_amount_not_null",
+      "check_clause": "amount IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_paymentDate_not_null",
+      "check_clause": "paymentDate IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_paymentMethod_not_null",
+      "check_clause": "paymentMethod IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_paymentNumber_not_null",
+      "check_clause": "paymentNumber IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_policyId_not_null",
+      "check_clause": "policyId IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_premiumId_not_null",
+      "check_clause": "premiumId IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_status_not_null",
+      "check_clause": "status IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_transactionReference_not_null",
+      "check_clause": "transactionReference IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "PremiumPayment_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "constraint_name": "chk_payment_amount",
+      "check_clause": "(amount > (0)::numeric)"
+    },
+    {
+      "table_name": "User",
+      "constraint_name": "User_createdAt_not_null",
+      "check_clause": "createdAt IS NOT NULL"
+    },
+    {
+      "table_name": "User",
+      "constraint_name": "User_email_not_null",
+      "check_clause": "email IS NOT NULL"
+    },
+    {
+      "table_name": "User",
+      "constraint_name": "User_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "User",
+      "constraint_name": "User_isActive_not_null",
+      "check_clause": "isActive IS NOT NULL"
+    },
+    {
+      "table_name": "User",
+      "constraint_name": "User_name_not_null",
+      "check_clause": "name IS NOT NULL"
+    },
+    {
+      "table_name": "User",
+      "constraint_name": "User_passwordHash_not_null",
+      "check_clause": "passwordHash IS NOT NULL"
+    },
+    {
+      "table_name": "User",
+      "constraint_name": "User_role_not_null",
+      "check_clause": "role IS NOT NULL"
+    },
+    {
+      "table_name": "User",
+      "constraint_name": "User_updatedAt_not_null",
+      "check_clause": "updatedAt IS NOT NULL"
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "constraint_name": "_prisma_migrations_applied_steps_count_not_null",
+      "check_clause": "applied_steps_count IS NOT NULL"
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "constraint_name": "_prisma_migrations_checksum_not_null",
+      "check_clause": "checksum IS NOT NULL"
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "constraint_name": "_prisma_migrations_id_not_null",
+      "check_clause": "id IS NOT NULL"
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "constraint_name": "_prisma_migrations_migration_name_not_null",
+      "check_clause": "migration_name IS NOT NULL"
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "constraint_name": "_prisma_migrations_started_at_not_null",
+      "check_clause": "started_at IS NOT NULL"
+    }
+  ],
+  "uniqueConstraints": [],
+  "indexesCount": 87,
+  "indexes": [
+    {
+      "tablename": "Beneficiary",
+      "indexname": "Beneficiary_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"Beneficiary_pkey\" ON public.\"Beneficiary\" USING btree (id)"
+    },
+    {
+      "tablename": "Beneficiary",
+      "indexname": "Beneficiary_policyId_idx",
+      "indexdef": "CREATE INDEX \"Beneficiary_policyId_idx\" ON public.\"Beneficiary\" USING btree (\"policyId\")"
+    },
+    {
+      "tablename": "Claim",
+      "indexname": "Claim_assignedAgentId_idx",
+      "indexdef": "CREATE INDEX \"Claim_assignedAgentId_idx\" ON public.\"Claim\" USING btree (\"assignedAgentId\")"
+    },
+    {
+      "tablename": "Claim",
+      "indexname": "Claim_claimNumber_idx",
+      "indexdef": "CREATE INDEX \"Claim_claimNumber_idx\" ON public.\"Claim\" USING btree (\"claimNumber\")"
+    },
+    {
+      "tablename": "Claim",
+      "indexname": "Claim_claimNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"Claim_claimNumber_key\" ON public.\"Claim\" USING btree (\"claimNumber\")"
+    },
+    {
+      "tablename": "Claim",
+      "indexname": "Claim_customerId_idx",
+      "indexdef": "CREATE INDEX \"Claim_customerId_idx\" ON public.\"Claim\" USING btree (\"customerId\")"
+    },
+    {
+      "tablename": "Claim",
+      "indexname": "Claim_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"Claim_pkey\" ON public.\"Claim\" USING btree (id)"
+    },
+    {
+      "tablename": "Claim",
+      "indexname": "Claim_policyId_idx",
+      "indexdef": "CREATE INDEX \"Claim_policyId_idx\" ON public.\"Claim\" USING btree (\"policyId\")"
+    },
+    {
+      "tablename": "Claim",
+      "indexname": "Claim_status_idx",
+      "indexdef": "CREATE INDEX \"Claim_status_idx\" ON public.\"Claim\" USING btree (status)"
+    },
+    {
+      "tablename": "ClaimProcessing",
+      "indexname": "ClaimProcessing_claimId_idx",
+      "indexdef": "CREATE INDEX \"ClaimProcessing_claimId_idx\" ON public.\"ClaimProcessing\" USING btree (\"claimId\")"
+    },
+    {
+      "tablename": "ClaimProcessing",
+      "indexname": "ClaimProcessing_claimId_key",
+      "indexdef": "CREATE UNIQUE INDEX \"ClaimProcessing_claimId_key\" ON public.\"ClaimProcessing\" USING btree (\"claimId\")"
+    },
+    {
+      "tablename": "ClaimProcessing",
+      "indexname": "ClaimProcessing_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"ClaimProcessing_pkey\" ON public.\"ClaimProcessing\" USING btree (id)"
+    },
+    {
+      "tablename": "ClaimProcessing",
+      "indexname": "ClaimProcessing_processingStatus_idx",
+      "indexdef": "CREATE INDEX \"ClaimProcessing_processingStatus_idx\" ON public.\"ClaimProcessing\" USING btree (\"processingStatus\")"
+    },
+    {
+      "tablename": "ClaimProcessing",
+      "indexname": "ClaimProcessing_verificationStatus_idx",
+      "indexdef": "CREATE INDEX \"ClaimProcessing_verificationStatus_idx\" ON public.\"ClaimProcessing\" USING btree (\"verificationStatus\")"
+    },
+    {
+      "tablename": "Customer",
+      "indexname": "Customer_customerNumber_idx",
+      "indexdef": "CREATE INDEX \"Customer_customerNumber_idx\" ON public.\"Customer\" USING btree (\"customerNumber\")"
+    },
+    {
+      "tablename": "Customer",
+      "indexname": "Customer_customerNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"Customer_customerNumber_key\" ON public.\"Customer\" USING btree (\"customerNumber\")"
+    },
+    {
+      "tablename": "Customer",
+      "indexname": "Customer_email_idx",
+      "indexdef": "CREATE INDEX \"Customer_email_idx\" ON public.\"Customer\" USING btree (email)"
+    },
+    {
+      "tablename": "Customer",
+      "indexname": "Customer_email_key",
+      "indexdef": "CREATE UNIQUE INDEX \"Customer_email_key\" ON public.\"Customer\" USING btree (email)"
+    },
+    {
+      "tablename": "Customer",
+      "indexname": "Customer_phone_idx",
+      "indexdef": "CREATE INDEX \"Customer_phone_idx\" ON public.\"Customer\" USING btree (phone)"
+    },
+    {
+      "tablename": "Customer",
+      "indexname": "Customer_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"Customer_pkey\" ON public.\"Customer\" USING btree (id)"
+    },
+    {
+      "tablename": "Customer",
+      "indexname": "Customer_status_idx",
+      "indexdef": "CREATE INDEX \"Customer_status_idx\" ON public.\"Customer\" USING btree (status)"
+    },
+    {
+      "tablename": "Customer",
+      "indexname": "Customer_userId_key",
+      "indexdef": "CREATE UNIQUE INDEX \"Customer_userId_key\" ON public.\"Customer\" USING btree (\"userId\")"
+    },
+    {
+      "tablename": "Document",
+      "indexname": "Document_claimId_idx",
+      "indexdef": "CREATE INDEX \"Document_claimId_idx\" ON public.\"Document\" USING btree (\"claimId\")"
+    },
+    {
+      "tablename": "Document",
+      "indexname": "Document_customerId_idx",
+      "indexdef": "CREATE INDEX \"Document_customerId_idx\" ON public.\"Document\" USING btree (\"customerId\")"
+    },
+    {
+      "tablename": "Document",
+      "indexname": "Document_documentNumber_idx",
+      "indexdef": "CREATE INDEX \"Document_documentNumber_idx\" ON public.\"Document\" USING btree (\"documentNumber\")"
+    },
+    {
+      "tablename": "Document",
+      "indexname": "Document_documentNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"Document_documentNumber_key\" ON public.\"Document\" USING btree (\"documentNumber\")"
+    },
+    {
+      "tablename": "Document",
+      "indexname": "Document_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"Document_pkey\" ON public.\"Document\" USING btree (id)"
+    },
+    {
+      "tablename": "Document",
+      "indexname": "Document_policyId_idx",
+      "indexdef": "CREATE INDEX \"Document_policyId_idx\" ON public.\"Document\" USING btree (\"policyId\")"
+    },
+    {
+      "tablename": "Document",
+      "indexname": "Document_verificationStatus_idx",
+      "indexdef": "CREATE INDEX \"Document_verificationStatus_idx\" ON public.\"Document\" USING btree (\"verificationStatus\")"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_agentNumber_idx",
+      "indexdef": "CREATE INDEX \"InsuranceAgent_agentNumber_idx\" ON public.\"InsuranceAgent\" USING btree (\"agentNumber\")"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_agentNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"InsuranceAgent_agentNumber_key\" ON public.\"InsuranceAgent\" USING btree (\"agentNumber\")"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_email_idx",
+      "indexdef": "CREATE INDEX \"InsuranceAgent_email_idx\" ON public.\"InsuranceAgent\" USING btree (email)"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_email_key",
+      "indexdef": "CREATE UNIQUE INDEX \"InsuranceAgent_email_key\" ON public.\"InsuranceAgent\" USING btree (email)"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_licenseNumber_idx",
+      "indexdef": "CREATE INDEX \"InsuranceAgent_licenseNumber_idx\" ON public.\"InsuranceAgent\" USING btree (\"licenseNumber\")"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_licenseNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"InsuranceAgent_licenseNumber_key\" ON public.\"InsuranceAgent\" USING btree (\"licenseNumber\")"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"InsuranceAgent_pkey\" ON public.\"InsuranceAgent\" USING btree (id)"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_region_idx",
+      "indexdef": "CREATE INDEX \"InsuranceAgent_region_idx\" ON public.\"InsuranceAgent\" USING btree (region)"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_status_idx",
+      "indexdef": "CREATE INDEX \"InsuranceAgent_status_idx\" ON public.\"InsuranceAgent\" USING btree (status)"
+    },
+    {
+      "tablename": "InsuranceAgent",
+      "indexname": "InsuranceAgent_userId_key",
+      "indexdef": "CREATE UNIQUE INDEX \"InsuranceAgent_userId_key\" ON public.\"InsuranceAgent\" USING btree (\"userId\")"
+    },
+    {
+      "tablename": "InsuranceApplication",
+      "indexname": "InsuranceApplication_applicationNumber_idx",
+      "indexdef": "CREATE INDEX \"InsuranceApplication_applicationNumber_idx\" ON public.\"InsuranceApplication\" USING btree (\"applicationNumber\")"
+    },
+    {
+      "tablename": "InsuranceApplication",
+      "indexname": "InsuranceApplication_applicationNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"InsuranceApplication_applicationNumber_key\" ON public.\"InsuranceApplication\" USING btree (\"applicationNumber\")"
+    },
+    {
+      "tablename": "InsuranceApplication",
+      "indexname": "InsuranceApplication_customerId_idx",
+      "indexdef": "CREATE INDEX \"InsuranceApplication_customerId_idx\" ON public.\"InsuranceApplication\" USING btree (\"customerId\")"
+    },
+    {
+      "tablename": "InsuranceApplication",
+      "indexname": "InsuranceApplication_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"InsuranceApplication_pkey\" ON public.\"InsuranceApplication\" USING btree (id)"
+    },
+    {
+      "tablename": "InsuranceApplication",
+      "indexname": "InsuranceApplication_policyTypeId_idx",
+      "indexdef": "CREATE INDEX \"InsuranceApplication_policyTypeId_idx\" ON public.\"InsuranceApplication\" USING btree (\"policyTypeId\")"
+    },
+    {
+      "tablename": "InsuranceApplication",
+      "indexname": "InsuranceApplication_status_idx",
+      "indexdef": "CREATE INDEX \"InsuranceApplication_status_idx\" ON public.\"InsuranceApplication\" USING btree (status)"
+    },
+    {
+      "tablename": "InsuranceCompany",
+      "indexname": "InsuranceCompany_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"InsuranceCompany_pkey\" ON public.\"InsuranceCompany\" USING btree (id)"
+    },
+    {
+      "tablename": "InsuranceCompany",
+      "indexname": "InsuranceCompany_registrationNumber_idx",
+      "indexdef": "CREATE INDEX \"InsuranceCompany_registrationNumber_idx\" ON public.\"InsuranceCompany\" USING btree (\"registrationNumber\")"
+    },
+    {
+      "tablename": "InsuranceCompany",
+      "indexname": "InsuranceCompany_registrationNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"InsuranceCompany_registrationNumber_key\" ON public.\"InsuranceCompany\" USING btree (\"registrationNumber\")"
+    },
+    {
+      "tablename": "InsuranceCompany",
+      "indexname": "InsuranceCompany_status_idx",
+      "indexdef": "CREATE INDEX \"InsuranceCompany_status_idx\" ON public.\"InsuranceCompany\" USING btree (status)"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_agentId_idx",
+      "indexdef": "CREATE INDEX \"InsurancePolicy_agentId_idx\" ON public.\"InsurancePolicy\" USING btree (\"agentId\")"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_applicationId_key",
+      "indexdef": "CREATE UNIQUE INDEX \"InsurancePolicy_applicationId_key\" ON public.\"InsurancePolicy\" USING btree (\"applicationId\")"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_companyId_idx",
+      "indexdef": "CREATE INDEX \"InsurancePolicy_companyId_idx\" ON public.\"InsurancePolicy\" USING btree (\"companyId\")"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_customerId_idx",
+      "indexdef": "CREATE INDEX \"InsurancePolicy_customerId_idx\" ON public.\"InsurancePolicy\" USING btree (\"customerId\")"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_expiryDate_idx",
+      "indexdef": "CREATE INDEX \"InsurancePolicy_expiryDate_idx\" ON public.\"InsurancePolicy\" USING btree (\"expiryDate\")"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"InsurancePolicy_pkey\" ON public.\"InsurancePolicy\" USING btree (id)"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_policyNumber_idx",
+      "indexdef": "CREATE INDEX \"InsurancePolicy_policyNumber_idx\" ON public.\"InsurancePolicy\" USING btree (\"policyNumber\")"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_policyNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"InsurancePolicy_policyNumber_key\" ON public.\"InsurancePolicy\" USING btree (\"policyNumber\")"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_policyTypeId_idx",
+      "indexdef": "CREATE INDEX \"InsurancePolicy_policyTypeId_idx\" ON public.\"InsurancePolicy\" USING btree (\"policyTypeId\")"
+    },
+    {
+      "tablename": "InsurancePolicy",
+      "indexname": "InsurancePolicy_status_idx",
+      "indexdef": "CREATE INDEX \"InsurancePolicy_status_idx\" ON public.\"InsurancePolicy\" USING btree (status)"
+    },
+    {
+      "tablename": "PolicyRenewal",
+      "indexname": "PolicyRenewal_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"PolicyRenewal_pkey\" ON public.\"PolicyRenewal\" USING btree (id)"
+    },
+    {
+      "tablename": "PolicyRenewal",
+      "indexname": "PolicyRenewal_policyId_idx",
+      "indexdef": "CREATE INDEX \"PolicyRenewal_policyId_idx\" ON public.\"PolicyRenewal\" USING btree (\"policyId\")"
+    },
+    {
+      "tablename": "PolicyRenewal",
+      "indexname": "PolicyRenewal_renewalNumber_idx",
+      "indexdef": "CREATE INDEX \"PolicyRenewal_renewalNumber_idx\" ON public.\"PolicyRenewal\" USING btree (\"renewalNumber\")"
+    },
+    {
+      "tablename": "PolicyRenewal",
+      "indexname": "PolicyRenewal_renewalNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"PolicyRenewal_renewalNumber_key\" ON public.\"PolicyRenewal\" USING btree (\"renewalNumber\")"
+    },
+    {
+      "tablename": "PolicyRenewal",
+      "indexname": "PolicyRenewal_status_idx",
+      "indexdef": "CREATE INDEX \"PolicyRenewal_status_idx\" ON public.\"PolicyRenewal\" USING btree (status)"
+    },
+    {
+      "tablename": "PolicyType",
+      "indexname": "PolicyType_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"PolicyType_pkey\" ON public.\"PolicyType\" USING btree (id)"
+    },
+    {
+      "tablename": "PolicyType",
+      "indexname": "PolicyType_status_idx",
+      "indexdef": "CREATE INDEX \"PolicyType_status_idx\" ON public.\"PolicyType\" USING btree (status)"
+    },
+    {
+      "tablename": "PolicyType",
+      "indexname": "PolicyType_typeCode_idx",
+      "indexdef": "CREATE INDEX \"PolicyType_typeCode_idx\" ON public.\"PolicyType\" USING btree (\"typeCode\")"
+    },
+    {
+      "tablename": "PolicyType",
+      "indexname": "PolicyType_typeCode_key",
+      "indexdef": "CREATE UNIQUE INDEX \"PolicyType_typeCode_key\" ON public.\"PolicyType\" USING btree (\"typeCode\")"
+    },
+    {
+      "tablename": "Premium",
+      "indexname": "Premium_dueDate_idx",
+      "indexdef": "CREATE INDEX \"Premium_dueDate_idx\" ON public.\"Premium\" USING btree (\"dueDate\")"
+    },
+    {
+      "tablename": "Premium",
+      "indexname": "Premium_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"Premium_pkey\" ON public.\"Premium\" USING btree (id)"
+    },
+    {
+      "tablename": "Premium",
+      "indexname": "Premium_policyId_idx",
+      "indexdef": "CREATE INDEX \"Premium_policyId_idx\" ON public.\"Premium\" USING btree (\"policyId\")"
+    },
+    {
+      "tablename": "Premium",
+      "indexname": "Premium_premiumNumber_idx",
+      "indexdef": "CREATE INDEX \"Premium_premiumNumber_idx\" ON public.\"Premium\" USING btree (\"premiumNumber\")"
+    },
+    {
+      "tablename": "Premium",
+      "indexname": "Premium_premiumNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"Premium_premiumNumber_key\" ON public.\"Premium\" USING btree (\"premiumNumber\")"
+    },
+    {
+      "tablename": "Premium",
+      "indexname": "Premium_status_idx",
+      "indexdef": "CREATE INDEX \"Premium_status_idx\" ON public.\"Premium\" USING btree (status)"
+    },
+    {
+      "tablename": "PremiumPayment",
+      "indexname": "PremiumPayment_paymentNumber_idx",
+      "indexdef": "CREATE INDEX \"PremiumPayment_paymentNumber_idx\" ON public.\"PremiumPayment\" USING btree (\"paymentNumber\")"
+    },
+    {
+      "tablename": "PremiumPayment",
+      "indexname": "PremiumPayment_paymentNumber_key",
+      "indexdef": "CREATE UNIQUE INDEX \"PremiumPayment_paymentNumber_key\" ON public.\"PremiumPayment\" USING btree (\"paymentNumber\")"
+    },
+    {
+      "tablename": "PremiumPayment",
+      "indexname": "PremiumPayment_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"PremiumPayment_pkey\" ON public.\"PremiumPayment\" USING btree (id)"
+    },
+    {
+      "tablename": "PremiumPayment",
+      "indexname": "PremiumPayment_policyId_idx",
+      "indexdef": "CREATE INDEX \"PremiumPayment_policyId_idx\" ON public.\"PremiumPayment\" USING btree (\"policyId\")"
+    },
+    {
+      "tablename": "PremiumPayment",
+      "indexname": "PremiumPayment_premiumId_idx",
+      "indexdef": "CREATE INDEX \"PremiumPayment_premiumId_idx\" ON public.\"PremiumPayment\" USING btree (\"premiumId\")"
+    },
+    {
+      "tablename": "PremiumPayment",
+      "indexname": "PremiumPayment_status_idx",
+      "indexdef": "CREATE INDEX \"PremiumPayment_status_idx\" ON public.\"PremiumPayment\" USING btree (status)"
+    },
+    {
+      "tablename": "PremiumPayment",
+      "indexname": "PremiumPayment_transactionReference_idx",
+      "indexdef": "CREATE INDEX \"PremiumPayment_transactionReference_idx\" ON public.\"PremiumPayment\" USING btree (\"transactionReference\")"
+    },
+    {
+      "tablename": "PremiumPayment",
+      "indexname": "PremiumPayment_transactionReference_key",
+      "indexdef": "CREATE UNIQUE INDEX \"PremiumPayment_transactionReference_key\" ON public.\"PremiumPayment\" USING btree (\"transactionReference\")"
+    },
+    {
+      "tablename": "User",
+      "indexname": "User_email_idx",
+      "indexdef": "CREATE INDEX \"User_email_idx\" ON public.\"User\" USING btree (email)"
+    },
+    {
+      "tablename": "User",
+      "indexname": "User_email_key",
+      "indexdef": "CREATE UNIQUE INDEX \"User_email_key\" ON public.\"User\" USING btree (email)"
+    },
+    {
+      "tablename": "User",
+      "indexname": "User_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"User_pkey\" ON public.\"User\" USING btree (id)"
+    },
+    {
+      "tablename": "User",
+      "indexname": "User_role_idx",
+      "indexdef": "CREATE INDEX \"User_role_idx\" ON public.\"User\" USING btree (role)"
+    },
+    {
+      "tablename": "_prisma_migrations",
+      "indexname": "_prisma_migrations_pkey",
+      "indexdef": "CREATE UNIQUE INDEX _prisma_migrations_pkey ON public._prisma_migrations USING btree (id)"
+    }
+  ],
+  "columns": [
+    {
+      "table_name": "Beneficiary",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "policyId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "name",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "relationship",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "allocationPercentage",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 5,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "phone",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "email",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "dateOfBirth",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "idProofType",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "idProofNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "address",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "Beneficiary",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "claimNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "customerId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "policyId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "assignedAgentId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "claimType",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "claimDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "claimedAmount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "approvedAmount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "ClaimStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'PENDING'::\"ClaimStatus\""
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "incidentDescription",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "rejectionReason",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "settlementDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "settlementMethod",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "settlementTransactionRef",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "Claim",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "claimId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "assignedAgentId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "processingDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "verificationStatus",
+      "data_type": "USER-DEFINED",
+      "udt_name": "VerificationStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'PENDING'::\"VerificationStatus\""
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "verificationNotes",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "approvedAmount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "processingStatus",
+      "data_type": "USER-DEFINED",
+      "udt_name": "ProcessingStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'AWAITING_REVIEW'::\"ProcessingStatus\""
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "documentsVerified",
+      "data_type": "boolean",
+      "udt_name": "bool",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "rejectionReason",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "ClaimProcessing",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "customerNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "userId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "firstName",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "lastName",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "dateOfBirth",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "gender",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "email",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "phone",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "address",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "city",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "state",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "postalCode",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "idProofType",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "maskedIdProofNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "CustomerStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'ACTIVE'::\"CustomerStatus\""
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "registrationDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "Customer",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "documentNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "name",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "documentType",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "fileSize",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "fileFormat",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "customerId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "policyId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "claimId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "submissionDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "Document",
+      "column_name": "verificationStatus",
+      "data_type": "USER-DEFINED",
+      "udt_name": "DocumentStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'PENDING'::\"DocumentStatus\""
+    },
+    {
+      "table_name": "Document",
+      "column_name": "verificationNotes",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "verifiedBy",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "verifiedDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "fileUrl",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Document",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "Document",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "agentNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "userId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "companyId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "firstName",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "lastName",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "email",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "phone",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "city",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "region",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "licenseNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "specialization",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "AgentStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'ACTIVE'::\"AgentStatus\""
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "joiningDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "commissionRate",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 5,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": "8.0"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "rating",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 3,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": "4.8"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "bio",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "InsuranceAgent",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "applicationNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "customerId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "policyTypeId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "requestedCoverage",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "annualIncome",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "employmentStatus",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "nomineeName",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "nomineeRelation",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "ApplicationStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'PENDING'::\"ApplicationStatus\""
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "applicationDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "reviewDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "rejectionReason",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "InsuranceApplication",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "name",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "shortName",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "registrationNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "category",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "phone",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "email",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "website",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "address",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "city",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "state",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "postalCode",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "solvencyRatio",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 5,
+      "numeric_scale": 2,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "rating",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "CompanyStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'ACTIVE'::\"CompanyStatus\""
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "description",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "InsuranceCompany",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "policyNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "applicationId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "customerId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "policyTypeId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "companyId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "agentId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "sumAssured",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "premiumAmount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "premiumFrequency",
+      "data_type": "USER-DEFINED",
+      "udt_name": "PremiumFrequency",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'ANNUALLY'::\"PremiumFrequency\""
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "startDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "expiryDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "PolicyStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'ACTIVE'::\"PolicyStatus\""
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "InsurancePolicy",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "renewalNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "policyId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "previousExpiryDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "newStartDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "newExpiryDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "renewalPremium",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "renewalDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "RenewalStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'UPCOMING'::\"RenewalStatus\""
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "paymentMethod",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "paymentReference",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "PolicyRenewal",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "typeCode",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "name",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "description",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "coverageDetails",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "eligibility",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "terms",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "icon",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "PolicyTypeStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'ACTIVE'::\"PolicyTypeStatus\""
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "PolicyType",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "premiumNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "policyId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "amount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "paidAmount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "dueDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "paidDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "PremiumStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'DUE'::\"PremiumStatus\""
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "billingPeriodStart",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "billingPeriodEnd",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "Premium",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "paymentNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "premiumId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "policyId",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "amount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "paymentDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "paymentMethod",
+      "data_type": "USER-DEFINED",
+      "udt_name": "PaymentMethod",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'UPI'::\"PaymentMethod\""
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "transactionReference",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "PaymentStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'SUCCESS'::\"PaymentStatus\""
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "notes",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "PremiumPayment",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "User",
+      "column_name": "id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "User",
+      "column_name": "email",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "User",
+      "column_name": "passwordHash",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "User",
+      "column_name": "role",
+      "data_type": "USER-DEFINED",
+      "udt_name": "Role",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "'CUSTOMER'::\"Role\""
+    },
+    {
+      "table_name": "User",
+      "column_name": "name",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "User",
+      "column_name": "phone",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "User",
+      "column_name": "isActive",
+      "data_type": "boolean",
+      "udt_name": "bool",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "table_name": "User",
+      "column_name": "createdAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "User",
+      "column_name": "updatedAt",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "column_name": "id",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "column_name": "checksum",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "column_name": "finished_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "column_name": "migration_name",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "column_name": "logs",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "column_name": "rolled_back_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "column_name": "started_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "_prisma_migrations",
+      "column_name": "applied_steps_count",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "is_nullable": "NO",
+      "column_default": "0"
+    }
+  ],
+  "enums": [
+    {
+      "enum_name": "AgentStatus",
+      "enum_value": "ACTIVE"
+    },
+    {
+      "enum_name": "AgentStatus",
+      "enum_value": "ON_LEAVE"
+    },
+    {
+      "enum_name": "AgentStatus",
+      "enum_value": "INACTIVE"
+    },
+    {
+      "enum_name": "ApplicationStatus",
+      "enum_value": "PENDING"
+    },
+    {
+      "enum_name": "ApplicationStatus",
+      "enum_value": "APPROVED"
+    },
+    {
+      "enum_name": "ApplicationStatus",
+      "enum_value": "REJECTED"
+    },
+    {
+      "enum_name": "ApplicationStatus",
+      "enum_value": "CANCELLED"
+    },
+    {
+      "enum_name": "ClaimStatus",
+      "enum_value": "PENDING"
+    },
+    {
+      "enum_name": "ClaimStatus",
+      "enum_value": "UNDER_REVIEW"
+    },
+    {
+      "enum_name": "ClaimStatus",
+      "enum_value": "APPROVED"
+    },
+    {
+      "enum_name": "ClaimStatus",
+      "enum_value": "REJECTED"
+    },
+    {
+      "enum_name": "ClaimStatus",
+      "enum_value": "SETTLED"
+    },
+    {
+      "enum_name": "CompanyStatus",
+      "enum_value": "ACTIVE"
+    },
+    {
+      "enum_name": "CompanyStatus",
+      "enum_value": "UNDER_REVIEW"
+    },
+    {
+      "enum_name": "CompanyStatus",
+      "enum_value": "INACTIVE"
+    },
+    {
+      "enum_name": "CustomerStatus",
+      "enum_value": "ACTIVE"
+    },
+    {
+      "enum_name": "CustomerStatus",
+      "enum_value": "INACTIVE"
+    },
+    {
+      "enum_name": "CustomerStatus",
+      "enum_value": "SUSPENDED"
+    },
+    {
+      "enum_name": "DocumentStatus",
+      "enum_value": "PENDING"
+    },
+    {
+      "enum_name": "DocumentStatus",
+      "enum_value": "VERIFIED"
+    },
+    {
+      "enum_name": "DocumentStatus",
+      "enum_value": "NEEDS_INFO"
+    },
+    {
+      "enum_name": "DocumentStatus",
+      "enum_value": "REJECTED"
+    },
+    {
+      "enum_name": "PaymentMethod",
+      "enum_value": "UPI"
+    },
+    {
+      "enum_name": "PaymentMethod",
+      "enum_value": "NET_BANKING"
+    },
+    {
+      "enum_name": "PaymentMethod",
+      "enum_value": "DEBIT_CARD"
+    },
+    {
+      "enum_name": "PaymentMethod",
+      "enum_value": "CREDIT_CARD"
+    },
+    {
+      "enum_name": "PaymentMethod",
+      "enum_value": "BANK_TRANSFER"
+    },
+    {
+      "enum_name": "PaymentMethod",
+      "enum_value": "CHEQUE"
+    },
+    {
+      "enum_name": "PaymentStatus",
+      "enum_value": "SUCCESS"
+    },
+    {
+      "enum_name": "PaymentStatus",
+      "enum_value": "PENDING"
+    },
+    {
+      "enum_name": "PaymentStatus",
+      "enum_value": "FAILED"
+    },
+    {
+      "enum_name": "PolicyStatus",
+      "enum_value": "ACTIVE"
+    },
+    {
+      "enum_name": "PolicyStatus",
+      "enum_value": "PENDING"
+    },
+    {
+      "enum_name": "PolicyStatus",
+      "enum_value": "EXPIRED"
+    },
+    {
+      "enum_name": "PolicyStatus",
+      "enum_value": "CANCELLED"
+    },
+    {
+      "enum_name": "PolicyTypeStatus",
+      "enum_value": "ACTIVE"
+    },
+    {
+      "enum_name": "PolicyTypeStatus",
+      "enum_value": "INACTIVE"
+    },
+    {
+      "enum_name": "PremiumFrequency",
+      "enum_value": "MONTHLY"
+    },
+    {
+      "enum_name": "PremiumFrequency",
+      "enum_value": "QUARTERLY"
+    },
+    {
+      "enum_name": "PremiumFrequency",
+      "enum_value": "HALF_YEARLY"
+    },
+    {
+      "enum_name": "PremiumFrequency",
+      "enum_value": "ANNUALLY"
+    },
+    {
+      "enum_name": "PremiumStatus",
+      "enum_value": "PAID"
+    },
+    {
+      "enum_name": "PremiumStatus",
+      "enum_value": "DUE"
+    },
+    {
+      "enum_name": "PremiumStatus",
+      "enum_value": "OVERDUE"
+    },
+    {
+      "enum_name": "PremiumStatus",
+      "enum_value": "PARTIALLY_PAID"
+    },
+    {
+      "enum_name": "PremiumStatus",
+      "enum_value": "GRACE_PERIOD"
+    },
+    {
+      "enum_name": "ProcessingStatus",
+      "enum_value": "AWAITING_REVIEW"
+    },
+    {
+      "enum_name": "ProcessingStatus",
+      "enum_value": "UNDER_VERIFICATION"
+    },
+    {
+      "enum_name": "ProcessingStatus",
+      "enum_value": "DOCUMENTS_REQUIRED"
+    },
+    {
+      "enum_name": "ProcessingStatus",
+      "enum_value": "APPROVED"
+    },
+    {
+      "enum_name": "ProcessingStatus",
+      "enum_value": "REJECTED"
+    },
+    {
+      "enum_name": "ProcessingStatus",
+      "enum_value": "SETTLED"
+    },
+    {
+      "enum_name": "RenewalStatus",
+      "enum_value": "UPCOMING"
+    },
+    {
+      "enum_name": "RenewalStatus",
+      "enum_value": "RENEWED"
+    },
+    {
+      "enum_name": "RenewalStatus",
+      "enum_value": "OVERDUE"
+    },
+    {
+      "enum_name": "RenewalStatus",
+      "enum_value": "GRACE_PERIOD"
+    },
+    {
+      "enum_name": "RenewalStatus",
+      "enum_value": "LAPSED"
+    },
+    {
+      "enum_name": "Role",
+      "enum_value": "ADMIN"
+    },
+    {
+      "enum_name": "Role",
+      "enum_value": "AGENT"
+    },
+    {
+      "enum_name": "Role",
+      "enum_value": "CUSTOMER"
+    },
+    {
+      "enum_name": "VerificationStatus",
+      "enum_value": "PENDING"
+    },
+    {
+      "enum_name": "VerificationStatus",
+      "enum_value": "PARTIAL"
+    },
+    {
+      "enum_name": "VerificationStatus",
+      "enum_value": "VERIFIED"
+    },
+    {
+      "enum_name": "VerificationStatus",
+      "enum_value": "FAILED"
+    }
+  ]
+}
