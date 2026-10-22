@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Archive, FileText, CheckCircle2, Clock, AlertCircle, XCircle,
@@ -51,9 +51,17 @@ function KPICard({ icon: Icon, color, bg, label, value, note }) {
 
 // ── View Document Metadata & Review Modal ─────────────────────
 function DocumentReviewModal({ open, onClose, doc, onUpdateStatus, onSaveNotes }) {
-  if (!doc) return null
-  const [notes, setNotes] = useState(doc.verificationNotes || '')
+  const [notes, setNotes] = useState(doc?.verificationNotes || '')
   const [actionTab, setActionTab] = useState('metadata') // 'metadata' | 'notes' | 'status'
+
+  useEffect(() => {
+    if (doc) {
+      setNotes(doc.verificationNotes || '')
+      setActionTab('metadata')
+    }
+  }, [doc])
+
+  if (!doc) return null
 
   function handleSaveNotes() {
     onSaveNotes(doc.docId, notes)

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FileStack, Clock, CheckCircle2, XCircle,
@@ -55,10 +55,18 @@ function KPICard({ icon: Icon, color, bg, label, value, note }) {
 
 // ── Detail Modal ────────────────────────────────────────────
 function AppDetailModal({ open, onClose, app, onStatusChange }) {
-  if (!app) return null
-  const docs = getAppDocuments(app.applicationId)
   const [confirmAction, setConfirmAction] = useState(null)
   const [rejectReason, setRejectReason] = useState('Incomplete documentation or failed underwriting criteria.')
+
+  useEffect(() => {
+    if (app) {
+      setConfirmAction(null)
+      setRejectReason('Incomplete documentation or failed underwriting criteria.')
+    }
+  }, [app])
+
+  if (!app) return null
+  const docs = getAppDocuments(app.applicationId)
 
   function confirm(action) { setConfirmAction(action) }
   function doAction() {

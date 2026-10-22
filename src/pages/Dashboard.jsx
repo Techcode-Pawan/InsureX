@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import insuranceService from '../services/insuranceService'
 import {
   AreaChart, Area, BarChart, Bar,
   PieChart, Pie, Cell, Tooltip,
@@ -209,11 +210,35 @@ export default function Dashboard() {
   const [policySearch, setPolicySearch] = useState('')
   const [selectedPolicy, setSelectedPolicy] = useState(null)
   const [addCustomerOpen, setAddCustomerOpen] = useState(false)
+  const [liveKpi, setLiveKpi] = useState(null)
+
+  useEffect(() => {
+    let isMounted = true
+    async function loadDashboardSummary() {
+      try {
+        const res = await insuranceService.getDashboardSummary()
+        const data = res?.data?.data || res?.data
+        if (isMounted && data) {
+          setLiveKpi(data)
+        }
+      } catch (err) {
+        console.warn('Live dashboard summary notice:', err.message)
+      }
+    }
+    loadDashboardSummary()
+    return () => { isMounted = false }
+  }, [])
 
   // ── Derived data from selected range ─────────────────────
   const kpi = kpiByRange[range]
   const premiumChart = premiumChartByRange[range]
   const claimsChart = claimsOverviewByRange[range]
+
+  // Calculated values overlaying live database metrics when available
+  const displayTotalCustomers = liveKpi?.totalCustomers !== undefined ? liveKpi.totalCustomers : kpi.totalCustomers.value
+  const displayActivePolicies = liveKpi?.activePolicies !== undefined ? liveKpi.activePolicies : kpi.activePolicies.value
+  const displayPendingClaims = liveKpi?.pendingClaims !== undefined ? liveKpi.pendingClaims : kpi.pendingClaims.value
+  const displayPremiumsCollected = liveKpi?.totalPremiumsCollected !== undefined ? Number(liveKpi.totalPremiumsCollected) : kpi.premiumsCollected.value
 
   // ── Filtered policies ─────────────────────────────────────
   const filteredPolicies = useMemo(() => {
@@ -283,7 +308,7 @@ export default function Dashboard() {
           <KPICard
             title="Total Customers"
             subtitle="Registered insurance customers"
-            displayValue={kpi.totalCustomers.value.toLocaleString('en-IN')}
+            displayValue={displayTotalCustomers.toLocaleString('en-IN')}
             change={kpi.totalCustomers.change}
             icon={Users}
             iconColor="#168BFF"
@@ -291,7 +316,7 @@ export default function Dashboard() {
           <KPICard
             title="Active Policies"
             subtitle="Currently active policies"
-            displayValue={kpi.activePolicies.value.toLocaleString('en-IN')}
+            displayValue={displayActivePolicies.toLocaleString('en-IN')}
             change={kpi.activePolicies.change}
             icon={Shield}
             iconColor="#10B981"
@@ -299,7 +324,7 @@ export default function Dashboard() {
           <KPICard
             title="Pending Claims"
             subtitle="Claims awaiting further action"
-            displayValue={kpi.pendingClaims.value.toString()}
+            displayValue={displayPendingClaims.toString()}
             change={kpi.pendingClaims.change}
             icon={AlertCircle}
             iconColor="#F59E0B"
@@ -307,7 +332,7 @@ export default function Dashboard() {
           <KPICard
             title="Premiums Collected"
             subtitle="Premium payments recorded"
-            displayValue={formatINR(kpi.premiumsCollected.value)}
+            displayValue={formatINR(displayPremiumsCollected)}
             change={kpi.premiumsCollected.change}
             icon={IndianRupee}
             iconColor="#8B5CF6"

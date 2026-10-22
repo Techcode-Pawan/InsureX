@@ -52,15 +52,31 @@ class ApiClient {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || `API Request failed with status ${response.status}`)
+        const errorMsg = data.message || `API Request failed with status ${response.status}`
+        const error = new Error(errorMsg)
+        error.status = response.status
+        error.isApiError = true
+        throw error
       }
 
       return { data, isLive: true }
     } catch (err) {
-      // If server is unreachable or offline, use structured mock fallback if available
+      // Do not silently mask API errors (4xx, 5xx) with mock fallback
+      if (err.isApiError) {
+        throw err
+      }
+
+      // Report network unreachable / offline errors explicitly
+      console.error(`[InsureX API Error] Connection to ${url} failed:`, err.message)
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('insurex:api-error', {
+          detail: { url, message: err.message },
+        }))
+      }
+
       if (mockFallback !== null && mockFallback !== undefined) {
-        console.warn(`[InsureX API] Backend service unavailable at ${url}. Operating in local demonstration mode. Details:`, err.message)
-        return { data: mockFallback, isLive: false, fallbackNotice: 'Demonstration mode (Backend offline)' }
+        console.warn(`[InsureX API] Offline demonstration mode active for ${url}.`)
+        return { data: mockFallback, isLive: false, fallbackNotice: `Backend offline: ${err.message}` }
       }
       throw err
     }

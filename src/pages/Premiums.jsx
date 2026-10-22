@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   IndianRupee, CheckCircle2, Clock, AlertTriangle,
@@ -51,10 +51,10 @@ function KPICard({ icon: Icon, color, bg, label, value, note }) {
 
 // ── Premium Detail Modal ──────────────────────────────────
 function PremiumDetailModal({ open, onClose, premium, onRecordPayment }) {
+  const navigate = useNavigate()
   if (!premium) return null
   const payments = getPaymentsForPremium(premium.premiumId)
   const remaining = premium.amount - (premium.paidAmount || 0)
-  const navigate = useNavigate()
 
   return (
     <Modal open={open} onClose={onClose} title="Premium Details" size="lg"
@@ -113,12 +113,21 @@ function PremiumDetailModal({ open, onClose, premium, onRecordPayment }) {
 
 // ── Record Payment Modal ──────────────────────────────────
 function RecordPaymentModal({ open, onClose, premium, onSubmit }) {
-  if (!premium) return null
-  const remaining = premium.amount - (premium.paidAmount || 0)
+  const remaining = premium ? (premium.amount - (premium.paidAmount || 0)) : 0
   const [amount, setAmount]   = useState(remaining)
   const [mode, setMode]       = useState('UPI')
-  const [date, setDate]       = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate]       = useState(() => new Date().toISOString().split('T')[0])
   const [errors, setErrors]   = useState({})
+
+  useEffect(() => {
+    if (premium) {
+      const rem = premium.amount - (premium.paidAmount || 0)
+      setAmount(rem)
+      setErrors({})
+    }
+  }, [premium])
+
+  if (!premium) return null
 
   function handleSubmit() {
     const e = {}

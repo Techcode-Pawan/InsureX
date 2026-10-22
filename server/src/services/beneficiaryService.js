@@ -27,6 +27,15 @@ export async function getBeneficiaries({ policyId, search }) {
   })
 }
 
+export async function getBeneficiaryById(id) {
+  const ben = await prisma.beneficiary.findUnique({
+    where: { id },
+    include: { policy: true },
+  })
+  if (!ben) throw new AppError('Beneficiary not found.', 404)
+  return ben
+}
+
 export async function createBeneficiary(data) {
   const policy = await prisma.insurancePolicy.findUnique({
     where: { id: data.policyId },

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   RefreshCcw, Clock, CheckCircle2, AlertTriangle, AlertCircle,
@@ -173,9 +173,17 @@ function CreateRenewalModal({ open, onClose, onSubmit }) {
 
 // ── Process Renewal Modal (Execute Payment) ───────────────────
 function ProcessRenewalModal({ open, onClose, renewal, onConfirm }) {
-  if (!renewal) return null
   const [payMethod, setPayMethod] = useState('UPI')
-  const [txnRef, setTxnRef] = useState(`TXN-REN-${Math.floor(10000 + Math.random() * 90000)}`)
+  const [txnRef, setTxnRef] = useState(() => `TXN-REN-${Math.floor(10000 + Math.random() * 90000)}`)
+
+  useEffect(() => {
+    if (renewal) {
+      setPayMethod('UPI')
+      setTxnRef(`TXN-REN-${Math.floor(10000 + Math.random() * 90000)}`)
+    }
+  }, [renewal])
+
+  if (!renewal) return null
 
   function handleProcess() {
     onConfirm(renewal.renewalId, {
