@@ -952,3 +952,49 @@ body {
 .bg-light { background-color: var(--color-bg-light); }
 .border-light { border-color: var(--color-border); }
 .shadow-card { box-shadow: var(--shadow-md); }
+
+/* ==============================
+   Dashboard Layout
+   ============================== */
+
+/* Chart rows go to single column on tablet/mobile */
+@media (max-width: 900px) {
+  .dashboard-charts-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Tighten page header actions on small screens */
+@media (max-width: 560px) {
+  .page-header > div:last-child {
+    flex-wrap: wrap;
+  }
+}
+
+/* ==============================
+   Toast Animation
+   ============================== */
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ==============================
+   Customer Details Grid
+   ============================== */
+
+@media (max-width: 900px) {
+  .details-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ==============================
+   Disabled Button
+   ============================== */
+
+.btn:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}

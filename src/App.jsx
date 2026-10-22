@@ -4,13 +4,16 @@ import Dashboard from './pages/Dashboard'
 import Customers from './pages/Customers'
 import CustomerDetails from './pages/CustomerDetails'
 import Policies from './pages/Policies'
+import PolicyDetails from './pages/PolicyDetails'
 import PolicyTypes from './pages/PolicyTypes'
 import Applications from './pages/Applications'
 import Premiums from './pages/Premiums'
 import Payments from './pages/Payments'
 import Claims from './pages/Claims'
+import ClaimDetails from './pages/ClaimDetails'
 import ClaimProcessing from './pages/ClaimProcessing'
 import Agents from './pages/Agents'
+import AgentDetails from './pages/AgentDetails'
 import Beneficiaries from './pages/Beneficiaries'
 import Documents from './pages/Documents'
 import Renewals from './pages/Renewals'
@@ -29,13 +32,16 @@ export default function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/:id" element={<CustomerDetails />} />
           <Route path="/policies" element={<Policies />} />
+          <Route path="/policies/:id" element={<PolicyDetails />} />
           <Route path="/policy-types" element={<PolicyTypes />} />
           <Route path="/applications" element={<Applications />} />
           <Route path="/premiums" element={<Premiums />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/claims" element={<Claims />} />
+          <Route path="/claims/:id" element={<ClaimDetails />} />
           <Route path="/claim-processing" element={<ClaimProcessing />} />
           <Route path="/agents" element={<Agents />} />
+          <Route path="/agents/:id" element={<AgentDetails />} />
           <Route path="/beneficiaries" element={<Beneficiaries />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/renewals" element={<Renewals />} />

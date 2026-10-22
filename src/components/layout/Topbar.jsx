@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Search, Bell, Menu, ChevronDown, User, LogOut, Settings } from 'lucide-react'
 import { navSections } from '../../config/navConfig'
 
@@ -16,6 +16,7 @@ function getPageTitle(pathname) {
 
 export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const [searchValue, setSearchValue] = useState('')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
@@ -68,6 +69,11 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
             placeholder="Search customers, policies, claims…"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchValue.trim()) {
+                navigate(`/customers?search=${encodeURIComponent(searchValue.trim())}`)
+              }
+            }}
             aria-label="Global search"
             id="global-search"
             style={{ fontSize: 13, height: 36 }}
@@ -183,13 +189,14 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
               <div style={{ fontSize: 12, color: '#64748B' }}>admin@insurex.com</div>
             </div>
             {[
-              { icon: User, label: 'My Profile' },
-              { icon: Settings, label: 'Settings' },
-            ].map(({ icon: Icon, label }) => (
+              { icon: User, label: 'My Profile', action: () => { setUserMenuOpen(false); navigate('/settings') } },
+              { icon: Settings, label: 'Settings', action: () => { setUserMenuOpen(false); navigate('/settings') } },
+            ].map(({ icon: Icon, label, action }) => (
               <button
                 key={label}
                 className="btn btn-ghost"
                 role="menuitem"
+                onClick={action}
                 style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, padding: '10px 16px', gap: 10 }}
               >
                 <Icon size={15} style={{ color: '#64748B' }} />
@@ -200,6 +207,11 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
               <button
                 className="btn btn-ghost"
                 role="menuitem"
+                onClick={() => {
+                  setUserMenuOpen(false)
+                  localStorage.removeItem('insurex_token')
+                  navigate('/dashboard')
+                }}
                 style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, padding: '10px 16px', gap: 10, color: '#DC2626' }}
               >
                 <LogOut size={15} />

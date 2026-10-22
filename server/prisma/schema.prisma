@@ -1,0 +1,553 @@
+// ============================================================
+// InsureX - PostgreSQL Database Schema (Prisma ORM)
+// Enterprise Insurance Management System
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ════════════════════════════════════════════════════════════
+// ENUMS
+// ════════════════════════════════════════════════════════════
+
+enum Role {
+  ADMIN
+  AGENT
+  CUSTOMER
+}
+
+enum CompanyStatus {
+  ACTIVE
+  UNDER_REVIEW
+  INACTIVE
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PolicyTypeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum PolicyStatus {
+  ACTIVE
+  PENDING
+  EXPIRED
+  CANCELLED
+}
+
+enum PremiumFrequency {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  ANNUALLY
+}
+
+enum PremiumStatus {
+  PAID
+  DUE
+  OVERDUE
+  PARTIALLY_PAID
+  GRACE_PERIOD
+}
+
+enum PaymentMethod {
+  UPI
+  NET_BANKING
+  DEBIT_CARD
+  CREDIT_CARD
+  BANK_TRANSFER
+  CHEQUE
+}
+
+enum PaymentStatus {
+  SUCCESS
+  PENDING
+  FAILED
+}
+
+enum AgentStatus {
+  ACTIVE
+  ON_LEAVE
+  INACTIVE
+}
+
+enum ClaimStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SETTLED
+}
+
+enum VerificationStatus {
+  PENDING
+  PARTIAL
+  VERIFIED
+  FAILED
+}
+
+enum ProcessingStatus {
+  AWAITING_REVIEW
+  UNDER_VERIFICATION
+  DOCUMENTS_REQUIRED
+  APPROVED
+  REJECTED
+  SETTLED
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  NEEDS_INFO
+  REJECTED
+}
+
+enum RenewalStatus {
+  UPCOMING
+  RENEWED
+  OVERDUE
+  GRACE_PERIOD
+  LAPSED
+}
+
+// ════════════════════════════════════════════════════════════
+// 1. AUTHENTICATION & ACCESS CONTROL
+// ════════════════════════════════════════════════════════════
+
+model User {
+  id           String          @id @default(uuid())
+  email        String          @unique
+  passwordHash String
+  role         Role            @default(CUSTOMER)
+  name         String
+  phone        String?
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  customer     Customer?
+  agent        InsuranceAgent?
+
+  @@index([email])
+  @@index([role])
+}
+
+// ════════════════════════════════════════════════════════════
+// 2. INSURANCE COMPANIES (CARRIERS / UNDERWRITERS)
+// ════════════════════════════════════════════════════════════
+
+model InsuranceCompany {
+  id                 String           @id @default(uuid())
+  name               String
+  shortName          String?
+  registrationNumber String           @unique
+  category           String
+  phone              String
+  email              String
+  website            String?
+  address            String
+  city               String
+  state              String
+  postalCode         String
+  solvencyRatio      Decimal?         @db.Decimal(5, 2)
+  rating             String?
+  status             CompanyStatus    @default(ACTIVE)
+  description        String?          @db.Text
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  policies           InsurancePolicy[]
+  agents             InsuranceAgent[]
+
+  @@index([registrationNumber])
+  @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════
+// 3. CUSTOMERS
+// ════════════════════════════════════════════════════════════
+
+model Customer {
+  id                  String                 @id @default(uuid())
+  customerNumber      String                 @unique
+  userId              String?                @unique
+  user                User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  firstName           String
+  lastName            String
+  dateOfBirth         DateTime
+  gender              String
+  email               String                 @unique
+  phone               String
+  address             String
+  city                String
+  state               String
+  postalCode          String
+  idProofType         String
+  maskedIdProofNumber String
+  status              CustomerStatus         @default(ACTIVE)
+  registrationDate    DateTime               @default(now())
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  applications        InsuranceApplication[]
+  policies            InsurancePolicy[]
+  claims              Claim[]
+  documents           Document[]
+
+  @@index([customerNumber])
+  @@index([email])
+  @@index([phone])
+  @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════
+// 4. POLICY TYPES
+// ════════════════════════════════════════════════════════════
+
+model PolicyType {
+  id              String                 @id @default(uuid())
+  typeCode        String                 @unique
+  name            String
+  description     String                 @db.Text
+  coverageDetails String                 @db.Text
+  eligibility     String                 @db.Text
+  terms           String                 @db.Text
+  icon            String?
+  status          PolicyTypeStatus       @default(ACTIVE)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  applications    InsuranceApplication[]
+  policies        InsurancePolicy[]
+
+  @@index([typeCode])
+  @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════
+// 5. INSURANCE APPLICATIONS
+// ════════════════════════════════════════════════════════════
+
+model InsuranceApplication {
+  id                String             @id @default(uuid())
+  applicationNumber String             @unique
+  customerId        String
+  customer          Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  policyTypeId      String
+  policyType        PolicyType         @relation(fields: [policyTypeId], references: [id], onDelete: Restrict)
+  requestedCoverage Decimal            @db.Decimal(14, 2)
+  annualIncome      Decimal?           @db.Decimal(14, 2)
+  employmentStatus  String?
+  nomineeName       String?
+  nomineeRelation   String?
+  status            ApplicationStatus  @default(PENDING)
+  applicationDate   DateTime           @default(now())
+  reviewDate        DateTime?
+  rejectionReason   String?            @db.Text
+  notes             String?            @db.Text
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  // 1-to-1: an approved application can result in at most one policy!
+  policy            InsurancePolicy?
+
+  @@index([applicationNumber])
+  @@index([customerId])
+  @@index([policyTypeId])
+  @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════
+// 6. INSURANCE POLICIES
+// ════════════════════════════════════════════════════════════
+
+model InsurancePolicy {
+  id               String                @id @default(uuid())
+  policyNumber     String                @unique
+  applicationId    String?               @unique // prevents duplicate policy creation for the same application!
+  application      InsuranceApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  customerId       String
+  customer         Customer              @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  policyTypeId     String
+  policyType       PolicyType            @relation(fields: [policyTypeId], references: [id], onDelete: Restrict)
+  companyId        String?
+  company          InsuranceCompany?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  agentId          String?
+  agent            InsuranceAgent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  sumAssured       Decimal               @db.Decimal(14, 2)
+  premiumAmount    Decimal               @db.Decimal(14, 2)
+  premiumFrequency PremiumFrequency      @default(ANNUALLY)
+  startDate        DateTime
+  expiryDate       DateTime
+  status           PolicyStatus          @default(ACTIVE)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  premiums         Premium[]
+  payments         PremiumPayment[]
+  beneficiaries    Beneficiary[]
+  claims           Claim[]
+  documents        Document[]
+  renewals         PolicyRenewal[]
+
+  @@index([policyNumber])
+  @@index([customerId])
+  @@index([policyTypeId])
+  @@index([companyId])
+  @@index([agentId])
+  @@index([status])
+  @@index([expiryDate])
+}
+
+// ════════════════════════════════════════════════════════════
+// 7. PREMIUMS (INSTALLMENT / BILLING SCHEDULE)
+// ════════════════════════════════════════════════════════════
+
+model Premium {
+  id                 String           @id @default(uuid())
+  premiumNumber      String           @unique
+  policyId           String
+  policy             InsurancePolicy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  amount             Decimal          @db.Decimal(14, 2)
+  paidAmount         Decimal          @default(0) @db.Decimal(14, 2)
+  dueDate            DateTime
+  paidDate           DateTime?
+  status             PremiumStatus    @default(DUE)
+  billingPeriodStart DateTime?
+  billingPeriodEnd   DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  payments           PremiumPayment[]
+
+  @@index([premiumNumber])
+  @@index([policyId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ════════════════════════════════════════════════════════════
+// 8. PREMIUM PAYMENTS
+// ════════════════════════════════════════════════════════════
+
+model PremiumPayment {
+  id                   String          @id @default(uuid())
+  paymentNumber        String          @unique
+  premiumId            String
+  premium              Premium         @relation(fields: [premiumId], references: [id], onDelete: Restrict)
+  policyId             String
+  policy               InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  amount               Decimal         @db.Decimal(14, 2)
+  paymentDate          DateTime        @default(now())
+  paymentMethod        PaymentMethod   @default(UPI)
+  transactionReference String          @unique
+  status               PaymentStatus   @default(SUCCESS)
+  notes                String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([paymentNumber])
+  @@index([premiumId])
+  @@index([policyId])
+  @@index([transactionReference])
+  @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════
+// 9. BENEFICIARIES (NOMINEES)
+// ════════════════════════════════════════════════════════════
+
+model Beneficiary {
+  id                   String          @id @default(uuid())
+  policyId             String
+  policy               InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  name                 String
+  relationship         String
+  allocationPercentage Decimal         @db.Decimal(5, 2)
+  phone                String?
+  email                String?
+  dateOfBirth          DateTime?
+  idProofType          String?
+  idProofNumber        String?
+  address              String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([policyId])
+}
+
+// ════════════════════════════════════════════════════════════
+// 10. INSURANCE AGENTS
+// ════════════════════════════════════════════════════════════
+
+model InsuranceAgent {
+  id             String            @id @default(uuid())
+  agentNumber    String            @unique
+  userId         String?           @unique
+  user           User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  companyId      String?
+  company        InsuranceCompany? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  firstName      String
+  lastName       String
+  email          String            @unique
+  phone          String
+  city           String
+  region         String
+  licenseNumber  String            @unique
+  specialization String
+  status         AgentStatus       @default(ACTIVE)
+  joiningDate    DateTime          @default(now())
+  commissionRate Decimal           @default(8.0) @db.Decimal(5, 2)
+  rating         Decimal           @default(4.8) @db.Decimal(3, 2)
+  bio            String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  policies        InsurancePolicy[]
+  claims          Claim[]
+  claimProcessings ClaimProcessing[]
+
+  @@index([agentNumber])
+  @@index([licenseNumber])
+  @@index([email])
+  @@index([status])
+  @@index([region])
+}
+
+// ════════════════════════════════════════════════════════════
+// 11. CLAIMS
+// ════════════════════════════════════════════════════════════
+
+model Claim {
+  id                       String            @id @default(uuid())
+  claimNumber              String            @unique
+  customerId               String
+  customer                 Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  policyId                 String
+  policy                   InsurancePolicy   @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  assignedAgentId          String?
+  assignedAgent            InsuranceAgent?   @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  claimType                String
+  claimDate                DateTime          @default(now())
+  claimedAmount            Decimal           @db.Decimal(14, 2)
+  approvedAmount           Decimal?          @db.Decimal(14, 2)
+  status                   ClaimStatus       @default(PENDING)
+  incidentDescription      String            @db.Text
+  rejectionReason          String?           @db.Text
+  settlementDate           DateTime?
+  settlementMethod         String?
+  settlementTransactionRef String?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  processing               ClaimProcessing?
+  documents                Document[]
+
+  @@index([claimNumber])
+  @@index([customerId])
+  @@index([policyId])
+  @@index([assignedAgentId])
+  @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════
+// 12. CLAIM PROCESSING WORKFLOW
+// ════════════════════════════════════════════════════════════
+
+model ClaimProcessing {
+  id                 String             @id @default(uuid())
+  claimId            String             @unique
+  claim              Claim              @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  assignedAgentId    String?
+  assignedAgent      InsuranceAgent?    @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  processingDate     DateTime           @default(now())
+  verificationStatus VerificationStatus @default(PENDING)
+  verificationNotes  String?            @db.Text
+  approvedAmount     Decimal?           @db.Decimal(14, 2)
+  processingStatus   ProcessingStatus   @default(AWAITING_REVIEW)
+  documentsVerified  Boolean            @default(false)
+  rejectionReason    String?            @db.Text
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([claimId])
+  @@index([processingStatus])
+  @@index([verificationStatus])
+}
+
+// ════════════════════════════════════════════════════════════
+// 13. DOCUMENTS (EVIDENTIARY REPOSITORY)
+// ════════════════════════════════════════════════════════════
+
+model Document {
+  id                 String          @id @default(uuid())
+  documentNumber     String          @unique
+  name               String
+  documentType       String
+  fileSize           String?
+  fileFormat         String?
+  customerId         String
+  customer           Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  policyId           String?
+  policy             InsurancePolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  claimId            String?
+  claim              Claim?          @relation(fields: [claimId], references: [id], onDelete: SetNull)
+  submissionDate     DateTime        @default(now())
+  verificationStatus DocumentStatus  @default(PENDING)
+  verificationNotes  String?         @db.Text
+  verifiedBy         String?
+  verifiedDate       DateTime?
+  fileUrl            String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([documentNumber])
+  @@index([customerId])
+  @@index([policyId])
+  @@index([claimId])
+  @@index([verificationStatus])
+}
+
+// ════════════════════════════════════════════════════════════
+// 14. POLICY RENEWALS
+// ════════════════════════════════════════════════════════════
+
+model PolicyRenewal {
+  id                 String          @id @default(uuid())
+  renewalNumber      String          @unique
+  policyId           String
+  policy             InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  previousExpiryDate DateTime
+  newStartDate       DateTime
+  newExpiryDate      DateTime
+  renewalPremium     Decimal         @db.Decimal(14, 2)
+  renewalDate        DateTime?
+  status             RenewalStatus   @default(UPCOMING)
+  paymentMethod      String?
+  paymentReference   String?
+  notes              String?         @db.Text
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([renewalNumber])
+  @@index([policyId])
+  @@index([status])
+}
