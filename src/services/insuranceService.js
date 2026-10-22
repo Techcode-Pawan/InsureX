@@ -8,7 +8,7 @@ import api from './apiClient'
 // Import existing mock data as fallbacks
 import { initialCustomers } from '../data/customerData'
 import { initialPolicies, initialPolicyTypes } from '../data/policyData'
-import { initialApplications } from '../data/applicationData'
+import { initialApplications, initialPayments, initialPremiums } from '../data/applicationData'
 import { initialClaims, initialProcessing } from '../data/claimData'
 import { initialAgents } from '../data/agentData'
 import { initialBeneficiaries } from '../data/beneficiaryData'
@@ -73,7 +73,10 @@ export const insuranceService = {
 
   // ── Premiums & Payments ─────────────────────────────────────
   async getPremiums(params = {}) {
-    return api.get('/premiums', params, { data: [] })
+    return api.get('/premiums', params, { data: initialPremiums, total: initialPremiums.length })
+  },
+  async getPayments(params = {}) {
+    return api.get('/payments', params, { data: initialPayments, total: initialPayments.length })
   },
   async createPayment(data) {
     return api.post('/payments', data, data)

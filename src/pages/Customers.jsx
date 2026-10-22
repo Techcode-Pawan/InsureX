@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Users, UserCheck, UserPlus, Shield,
   Search, SlidersHorizontal, X,
@@ -122,6 +122,7 @@ const ROWS_OPTIONS = [8, 15, 25, 50]
 
 export default function Customers() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   // ── State ────────────────────────────────────────────────
   const [customers, setCustomers]     = useState(initialCustomers)
@@ -136,6 +137,15 @@ export default function Customers() {
   const [editTarget, setEditTarget]   = useState(null)
   const [toast,     setToast]         = useState(null)
   const [showFilters, setShowFilters] = useState(false)
+
+  // ── Handle Action Shortcuts (e.g. ?action=new) ────────────
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('action') === 'new') {
+      setEditTarget(null)
+      setFormOpen(true)
+    }
+  }, [location.search])
 
   // ── Sync with PostgreSQL backend ─────────────────────────
   useEffect(() => {

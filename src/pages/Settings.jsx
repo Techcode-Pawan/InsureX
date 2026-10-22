@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Settings as SettingsIcon, Building, User, Bell, Monitor,
   Shield, Check, Save, Lock, Mail, Phone, MapPin, Globe,
@@ -10,66 +10,102 @@ import Card, { CardHeader } from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import { Toast } from '../components/ui/Toast'
+import { useAuth } from '../context/AuthContext'
 
 export default function Settings() {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('company') // 'company' | 'user' | 'notifications' | 'display'
   const [toast, setToast] = useState(null)
 
   // 1. Company Profile State
-  const [company, setCompany] = useState({
-    orgName: 'InsureX Insurance Management Technologies Pvt. Ltd.',
-    shortName: 'InsureX Enterprise',
-    cinNumber: 'U72900MH2021PTC368921',
-    agencyLicense: 'IRDAI-CORP-AG-884210',
-    gstin: '27AABCI1234F1Z5',
-    address: 'Level 12, Tower B, Cyber City',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    postalCode: '400051',
-    supportEmail: 'support@insurex.in',
-    phone: '+91 22 4900 8800',
-    tollFree: '1800 200 4567',
-    website: 'https://insurex.internal',
+  const [company, setCompany] = useState(() => {
+    try {
+      const saved = localStorage.getItem('insurex_settings_company')
+      if (saved) return JSON.parse(saved)
+    } catch (e) {}
+    return {
+      orgName: 'InsureX Insurance Management Technologies Pvt. Ltd.',
+      shortName: 'InsureX Enterprise',
+      cinNumber: 'U72900MH2021PTC368921',
+      agencyLicense: 'IRDAI-CORP-AG-884210',
+      gstin: '27AABCI1234F1Z5',
+      address: 'Level 12, Tower B, Cyber City',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      postalCode: '400051',
+      supportEmail: 'support@insurex.in',
+      phone: '+91 22 4900 8800',
+      tollFree: '1800 200 4567',
+      website: 'https://insurex.internal',
+    }
   })
 
-  // 2. User Profile State
+  // 2. User Profile State (Synchronized with authenticated account)
   const [userProfile, setUserProfile] = useState({
-    name: 'Siddharth Rao',
-    email: 'admin.siddharth@insurex.in',
-    role: 'Principal Underwriter & Administrator',
-    employeeId: 'EMP-IX-0042',
-    department: 'Underwriting & Operations',
-    phone: '+91 98200 45678',
+    name: user?.name || 'Administrator',
+    email: user?.email || 'admin@gmail.com',
+    role: user?.role === 'ADMIN' ? 'Super Administrator' : 'Field Agent',
+    employeeId: user?.role === 'ADMIN' ? 'ADM-IX-001' : 'AGT-IX-1001',
+    department: user?.role === 'ADMIN' ? 'Enterprise Operations' : 'Agency Distribution',
+    phone: user?.phone || '+91 98200 45678',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   })
 
+  useEffect(() => {
+    if (user) {
+      setUserProfile(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        role: user.role === 'ADMIN' ? 'Super Administrator' : 'Field Agent',
+      }))
+    }
+  }, [user])
+
   // 3. Notification Preferences State
-  const [notifications, setNotifications] = useState({
-    emailNewApplication: true,
-    emailClaimFiled: true,
-    emailPolicyRenewal: true,
-    emailPremiumOverdue: true,
-    emailExecutiveDigest: false,
-    smsHighValueClaim: true,
-    smsPolicyCancellation: false,
-    inAppSystemAlerts: true,
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('insurex_settings_notifs')
+      if (saved) return JSON.parse(saved)
+    } catch (e) {}
+    return {
+      emailNewApplication: true,
+      emailClaimFiled: true,
+      emailPolicyRenewal: true,
+      emailPremiumOverdue: true,
+      emailExecutiveDigest: false,
+      smsHighValueClaim: true,
+      smsPolicyCancellation: false,
+      inAppSystemAlerts: true,
+    }
   })
 
   // 4. Display Preferences State
-  const [display, setDisplay] = useState({
-    currency: 'INR',
-    dateFormat: 'YYYY-MM-DD',
-    numberFormat: 'Indian',
-    theme: 'light',
-    defaultRows: '8',
-    compactMode: false,
+  const [display, setDisplay] = useState(() => {
+    try {
+      const saved = localStorage.getItem('insurex_settings_display')
+      if (saved) return JSON.parse(saved)
+    } catch (e) {}
+    return {
+      currency: 'INR',
+      dateFormat: 'YYYY-MM-DD',
+      numberFormat: 'Indian',
+      theme: 'light',
+      defaultRows: '8',
+      compactMode: false,
+    }
   })
 
   function handleSaveCompany(e) {
     e.preventDefault()
-    setToast({ message: 'Corporate profile updated successfully.', type: 'success' })
+    try {
+      localStorage.setItem('insurex_settings_company', JSON.stringify(company))
+      setToast({ message: 'Corporate profile updated and saved.', type: 'success' })
+    } catch (err) {
+      setToast({ message: 'Failed to persist settings.', type: 'error' })
+    }
   }
 
   function handleSaveUser(e) {
@@ -78,17 +114,27 @@ export default function Settings() {
       setToast({ message: 'New password and confirmation do not match.', type: 'error' })
       return
     }
-    setToast({ message: 'User profile preferences saved.', type: 'success' })
+    setToast({ message: 'User profile preferences updated.', type: 'success' })
   }
 
   function handleSaveNotifications(e) {
     e.preventDefault()
-    setToast({ message: 'Notification preferences updated.', type: 'success' })
+    try {
+      localStorage.setItem('insurex_settings_notifs', JSON.stringify(notifications))
+      setToast({ message: 'Notification preferences saved.', type: 'success' })
+    } catch (err) {
+      setToast({ message: 'Failed to save notifications.', type: 'error' })
+    }
   }
 
   function handleSaveDisplay(e) {
     e.preventDefault()
-    setToast({ message: 'Display and regional settings updated.', type: 'success' })
+    try {
+      localStorage.setItem('insurex_settings_display', JSON.stringify(display))
+      setToast({ message: 'Display and regional settings saved.', type: 'success' })
+    } catch (err) {
+      setToast({ message: 'Failed to save display settings.', type: 'error' })
+    }
   }
 
   return (

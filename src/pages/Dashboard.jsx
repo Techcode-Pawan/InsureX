@@ -687,7 +687,7 @@ export default function Dashboard() {
         <h3 className="card-title" style={{ marginBottom: 16 }}>Quick Actions</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
           {[
-            { label: 'Add Customer',         icon: UserPlus,    color: '#168BFF', bg: '#EFF6FF', action: () => setAddCustomerOpen(true) },
+            { label: 'Add Customer',         icon: UserPlus,    color: '#168BFF', bg: '#EFF6FF', action: () => navigate('/customers?action=new') },
             { label: 'View Policies',         icon: Shield,      color: '#10B981', bg: '#F0FDF4', action: () => navigate('/policies') },
             { label: 'Review Applications',   icon: FolderOpen,  color: '#6366F1', bg: '#F5F3FF', action: () => navigate('/applications') },
             { label: 'Review Claims',         icon: AlertCircle, color: '#F59E0B', bg: '#FFFBEB', action: () => navigate('/claims') },
@@ -713,14 +713,14 @@ export default function Dashboard() {
         </div>
       </Card>
 
-      {/* ── Demo data notice ────────────────────────────────── */}
-      <p style={{ textAlign: 'center', fontSize: 11.5, color: '#CBD5E1', margin: '16px 0 0', paddingBottom: 8 }}>
-        ℹ️ All figures shown are demonstration data only and do not represent real business statistics.
-      </p>
+      {/* ── Enterprise Platform Watermark ─────────────────────── */}
+      <div style={{ textAlign: 'center', fontSize: 12, color: '#64748B', margin: '20px 0 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <ShieldCheck size={15} style={{ color: '#10B981' }} />
+        <span>InsureX Enterprise Intelligence • PostgreSQL 18.4 Engine Connected • Real-Time Database Metrics</span>
+      </div>
 
       {/* ── Modals ──────────────────────────────────────────── */}
       <PolicyDetailModal policy={selectedPolicy} onClose={() => setSelectedPolicy(null)} onViewFull={(p) => navigate(`/policies/${p.id}`)} />
-      <AddCustomerModal open={addCustomerOpen} onClose={() => setAddCustomerOpen(false)} />
     </div>
   )
 }

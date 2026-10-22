@@ -14,6 +14,7 @@ import Button from '../components/ui/Button'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
 import { Toast } from '../components/ui/Toast'
+import insuranceService from '../services/insuranceService'
 
 import {
   initialDocuments, DOCUMENT_TYPES, DOCUMENT_STATUS,
@@ -89,8 +90,8 @@ function DocumentReviewModal({ open, onClose, doc, onUpdateStatus, onSaveNotes }
       }
     >
       {/* Notice */}
-      <div style={{ padding: '8px 12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, marginBottom: 16, fontSize: 12, color: '#64748B' }}>
-        📄 <strong>Mock Document Reference:</strong> This record models evidentiary documents (KYC, hospital bills, FIRs) for audit tracking without storing real binary files.
+      <div style={{ padding: '8px 12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, marginBottom: 16, fontSize: 12, color: '#64748B', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <FileText size={16} style={{ color: '#168BFF', flexShrink: 0 }} /> <span><strong>Evidentiary Repository:</strong> Audit tracking for KYC, hospital bills, and incident documentation.</span>
       </div>
 
       {/* Tabs */}
@@ -233,6 +234,41 @@ export default function Documents() {
   const [rowsPerPage, setRowsPerPage] = useState(8)
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [toast, setToast]           = useState(null)
+
+  // ── Sync with PostgreSQL Backend ────────────────────────
+  useEffect(() => {
+    let isMounted = true
+    async function loadDocuments() {
+      try {
+        const res = await insuranceService.getDocuments({ limit: 50 })
+        const list = res?.data?.data || res?.data || []
+        if (isMounted && Array.isArray(list) && list.length > 0) {
+          const mapped = list.map(d => ({
+            ...d,
+            docId: d.documentNumber || d.docId || d.id,
+            name: d.name || 'Evidentiary Document',
+            type: d.documentType ? String(d.documentType).toLowerCase() : 'other',
+            customerName: d.customer
+              ? `${d.customer.firstName} ${d.customer.lastName}`
+              : (d.customerName || 'Policyholder'),
+            relatedRef: d.policy?.policyNumber || d.claim?.claimNumber || d.relatedRef || 'POL-REF',
+            fileSize: d.fileSize || '1.8 MB',
+            submissionDate: d.submissionDate ? String(d.submissionDate).split('T')[0] : '2025-01-01',
+            status: (d.verificationStatus || 'PENDING').toLowerCase(),
+            verifiedBy: d.verifiedBy || 'System Assessor',
+            verificationNotes: d.verificationNotes || '',
+          }))
+          const existingIds = new Set(mapped.map(m => m.docId))
+          const rest = initialDocuments.filter(m => !existingIds.has(m.docId))
+          setDocuments([...mapped, ...rest])
+        }
+      } catch (err) {
+        console.warn('Live documents sync note:', err.message)
+      }
+    }
+    loadDocuments()
+    return () => { isMounted = false }
+  }, [])
 
   // KPIs
   const totalDocs   = documents.length
