@@ -27,7 +27,7 @@
     "Beneficiary": 2,
     "Claim": 1,
     "ClaimProcessing": 1,
-    "Customer": 2,
+    "Customer": 3,
     "Document": 1,
     "InsuranceAgent": 1,
     "InsuranceApplication": 1,
@@ -3652,6 +3652,216 @@
       "numeric_scale": 0,
       "is_nullable": "NO",
       "column_default": "0"
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "policy_id",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "policyNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "customerNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "customer_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "email",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "phone",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "plan_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "sumAssured",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "premiumAmount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "premiumFrequency",
+      "data_type": "USER-DEFINED",
+      "udt_name": "PremiumFrequency",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "startDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_active_policyholders",
+      "column_name": "expiryDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_claims_tracking",
+      "column_name": "claimNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_claims_tracking",
+      "column_name": "customerNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_claims_tracking",
+      "column_name": "customer_name",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_claims_tracking",
+      "column_name": "policyNumber",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_claims_tracking",
+      "column_name": "claimType",
+      "data_type": "text",
+      "udt_name": "text",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_claims_tracking",
+      "column_name": "claimedAmount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": 14,
+      "numeric_scale": 2,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_claims_tracking",
+      "column_name": "approved_amount",
+      "data_type": "numeric",
+      "udt_name": "numeric",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_claims_tracking",
+      "column_name": "claim_status",
+      "data_type": "USER-DEFINED",
+      "udt_name": "ClaimStatus",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "vw_claims_tracking",
+      "column_name": "claimDate",
+      "data_type": "timestamp without time zone",
+      "udt_name": "timestamp",
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES",
+      "column_default": null
     }
   ],
   "enums": [
