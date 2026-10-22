@@ -45,7 +45,7 @@ export const navSections = [
     items: [
       { label: 'Claims', path: '/claims', icon: AlertCircle },
       { label: 'Claim Processing', path: '/claim-processing', icon: GitPullRequest },
-      { label: 'Agents', path: '/agents', icon: UserCheck },
+      { label: 'Agents', path: '/agents', icon: UserCheck, adminOnly: true },
       { label: 'Beneficiaries', path: '/beneficiaries', icon: Heart },
       { label: 'Documents', path: '/documents', icon: Archive },
       { label: 'Renewals', path: '/renewals', icon: RefreshCcw },
@@ -54,9 +54,29 @@ export const navSections = [
   {
     label: 'Management',
     items: [
-      { label: 'Insurance Companies', path: '/insurance-companies', icon: Building2 },
+      { label: 'Insurance Companies', path: '/insurance-companies', icon: Building2, adminOnly: true },
       { label: 'Reports', path: '/reports', icon: BarChart3 },
-      { label: 'Settings', path: '/settings', icon: Settings },
+      { label: 'Settings', path: '/settings', icon: Settings, adminOnly: true },
     ],
   },
 ]
+
+/**
+ * Filter navigation sections according to user role
+ * For AGENT role: hides Admin-only management modules (Agents, Companies, Settings)
+ */
+export function getNavSectionsForRole(role) {
+  const isAgent = role === 'AGENT'
+  return navSections
+    .map((section) => {
+      const filteredItems = section.items.filter((item) => {
+        if (isAgent && item.adminOnly) return false
+        return true
+      })
+      return {
+        ...section,
+        items: filteredItems,
+      }
+    })
+    .filter((section) => section.items.length > 0)
+}

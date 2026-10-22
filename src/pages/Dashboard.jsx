@@ -11,7 +11,9 @@ import {
   TrendingUp, TrendingDown, Download, Search,
   Eye, UserPlus, FolderOpen, Banknote,
   RefreshCcw, CheckCircle2, ExternalLink,
+  Briefcase, Award, Sparkles, ShieldCheck
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 import PageHeader from '../components/layout/PageHeader'
 import Card, { CardHeader } from '../components/ui/Card'
@@ -206,6 +208,9 @@ function AddCustomerModal({ open, onClose }) {
 // ════════════════════════════════════════════════════════════
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAgent = user?.role === 'AGENT'
+
   const [range, setRange] = useState('30d')
   const [policySearch, setPolicySearch] = useState('')
   const [selectedPolicy, setSelectedPolicy] = useState(null)
@@ -267,8 +272,12 @@ export default function Dashboard() {
     <div>
       {/* ── Page Header ────────────────────────────────────── */}
       <PageHeader
-        title="Dashboard"
-        subtitle="Monitor your insurance operations at a glance."
+        title={isAgent ? "Advisor Workspace Dashboard" : "Executive Administration Dashboard"}
+        subtitle={
+          isAgent
+            ? `Welcome back, ${user?.name || 'Pawan'}! Manage your client portfolio, policy applications, and quick claims.`
+            : "Enterprise oversight of policyholders, underwriters, registered carriers, and financial transactions."
+        }
         actions={
           <>
             {/* Date range selector */}
@@ -301,6 +310,91 @@ export default function Dashboard() {
           </>
         }
       />
+
+      {/* ── Role Authority Banner ────────────────────────────── */}
+      <div
+        className="mb-6 p-4 md:p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border"
+        style={{
+          background: isAgent
+            ? 'linear-gradient(135deg, rgba(240, 253, 244, 0.95), rgba(220, 252, 231, 0.6))'
+            : 'linear-gradient(135deg, rgba(238, 242, 255, 0.95), rgba(224, 231, 255, 0.6))',
+          borderColor: isAgent ? '#BBF7D0' : '#C7D2FE',
+          boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.04)'
+        }}
+      >
+        <div className="flex items-center gap-3.5">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-white shadow-sm"
+            style={{
+              background: isAgent
+                ? 'linear-gradient(135deg, #059669, #10B981)'
+                : 'linear-gradient(135deg, #4F46E5, #6366F1)'
+            }}
+          >
+            {isAgent ? <Briefcase size={22} /> : <ShieldCheck size={22} />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span
+                className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                style={{
+                  background: isAgent ? '#DCFCE7' : '#E0E7FF',
+                  color: isAgent ? '#15803D' : '#4338CA'
+                }}
+              >
+                {isAgent ? 'Field Agent Authority' : 'Super Admin Authority'}
+              </span>
+              <span className="text-xs text-slate-500 font-medium">
+                {isAgent ? 'Assigned Branch: Delhi NCR / North Region' : 'Full Enterprise Management Rights'}
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-slate-900 mt-1">
+              {isAgent
+                ? `Advisor Portal: Active portfolio for ${user?.name || 'Agent Pawan'}`
+                : 'Enterprise Control Tower: Full Administration Privileges Active'}
+            </h3>
+            <p className="text-xs text-slate-600 mt-0.5">
+              {isAgent
+                ? 'Commission Tier: Senior Advisor (8.5%) • 94.2% Retention • Dedicated Customer Management'
+                : 'System Health: 100% Operational • PostgreSQL 18.4 (Live) • Agent & Underwriting Governance'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {isAgent ? (
+            <>
+              <button
+                onClick={() => navigate('/customers')}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors"
+              >
+                + New Client
+              </button>
+              <button
+                onClick={() => navigate('/applications')}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-emerald-200 text-emerald-800 hover:bg-emerald-50 transition-colors"
+              >
+                + Policy Application
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate('/agents')}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors"
+              >
+                Manage Agents
+              </button>
+              <button
+                onClick={() => navigate('/insurance-companies')}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-indigo-200 text-indigo-800 hover:bg-indigo-50 transition-colors"
+              >
+                Carriers & Underwriters
+              </button>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* ── KPI Cards ──────────────────────────────────────── */}
       <section aria-label="Key Performance Indicators">

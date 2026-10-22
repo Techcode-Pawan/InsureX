@@ -26,15 +26,28 @@ export const authService = {
       // Check for demo mock fallback if backend is offline
       if (err.message && err.message.includes('Failed to fetch')) {
         console.warn('Backend unavailable, attempting demo credentials check')
-        if (email === 'admin@insurex.in' && password === 'Password123!') {
+        if ((email === 'admin@gmail.com' && password === 'Admin@123') || (email === 'admin@insurex.in' && password === 'Password123!')) {
           const mockUser = {
-            id: 'demo-admin-id',
-            name: 'Siddharth Rao',
-            email: 'admin@insurex.in',
+            id: 'admin-executive-id',
+            name: 'Executive Administrator',
+            email: 'admin@gmail.com',
             role: 'ADMIN',
             phone: '+91 98200 45678',
           }
-          const mockToken = 'mock_demo_jwt_token'
+          const mockToken = 'mock_admin_jwt_token'
+          api.setToken(mockToken)
+          localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(mockUser))
+          return { success: true, user: mockUser, token: mockToken, isDemo: true }
+        }
+        if ((email === 'agent@gmail.com' && password === 'Agent@123') || (email === 'rajesh.kapoor@insurex.in' && password === 'Password123!')) {
+          const mockUser = {
+            id: 'agent-advisor-id',
+            name: 'Rajesh Kapoor (Agent)',
+            email: 'agent@gmail.com',
+            role: 'AGENT',
+            phone: '+91 98201 11223',
+          }
+          const mockToken = 'mock_agent_jwt_token'
           api.setToken(mockToken)
           localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(mockUser))
           return { success: true, user: mockUser, token: mockToken, isDemo: true }

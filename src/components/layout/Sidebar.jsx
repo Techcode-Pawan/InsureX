@@ -1,11 +1,14 @@
 import { NavLink, useLocation, Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, LogIn, LogOut } from 'lucide-react'
-import { navSections } from '../../config/navConfig'
+import { ChevronLeft, ChevronRight, LogIn, LogOut, Shield, Briefcase } from 'lucide-react'
+import { getNavSectionsForRole } from '../../config/navConfig'
 import { useAuth } from '../../context/AuthContext'
 
 export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile }) {
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuth()
+
+  const isAgent = user?.role === 'AGENT'
+  const sections = getNavSectionsForRole(user?.role)
 
   const isActive = (path) => location.pathname === path ||
     (path !== '/dashboard' && location.pathname.startsWith(path))
@@ -28,17 +31,47 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
       <aside className={sidebarClass} aria-label="Main Navigation">
         {/* Logo */}
         <div className="sidebar-logo">
-          <div className="sidebar-logo-img flex items-center justify-center bg-blue-600 text-white font-black text-sm rounded-lg flex-shrink-0" style={{ width: 36, height: 36, background: 'linear-gradient(135deg, #168BFF, #20B8FF)' }}>
+          <div className="sidebar-logo-img flex items-center justify-center bg-blue-600 text-white font-black text-sm rounded-lg flex-shrink-0" style={{ width: 36, height: 36, background: isAgent ? 'linear-gradient(135deg, #10B981, #059669)' : 'linear-gradient(135deg, #168BFF, #20B8FF)' }}>
             IX
           </div>
-          <span className="sidebar-logo-text">
-            Insure<span className="text-electric">X</span>
-          </span>
+          <div className="sidebar-logo-text" style={{ display: 'flex', flexDirection: 'column' }}>
+            <span>
+              Insure<span className="text-electric">X</span>
+            </span>
+            {!collapsed && (
+              <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', color: isAgent ? '#34D399' : '#60A5FA', textTransform: 'uppercase' }}>
+                {isAgent ? 'Advisor Portal' : 'Admin Console'}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Role Authority Indicator */}
+        {!collapsed && (
+          <div style={{ padding: '0 12px 10px 12px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 10px',
+                borderRadius: 8,
+                background: isAgent ? 'rgba(16, 185, 129, 0.12)' : 'rgba(22, 139, 255, 0.12)',
+                border: isAgent ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(22, 139, 255, 0.25)',
+                color: isAgent ? '#34D399' : '#93C5FD',
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              {isAgent ? <Briefcase size={13} /> : <Shield size={13} />}
+              <span>{isAgent ? 'Field Agent Authority' : 'Super Admin Authority'}</span>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="sidebar-nav">
-          {navSections.map((section) => (
+          {sections.map((section) => (
             <div key={section.label}>
               <div className="sidebar-section-label">{section.label}</div>
               {section.items.map((item) => {

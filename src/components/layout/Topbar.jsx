@@ -25,16 +25,17 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
   const userMenuRef = useRef(null)
   const notifRef = useRef(null)
 
-  const userName = user?.name || 'Administrator'
-  const userEmail = user?.email || 'admin@insurex.in'
-  const userRole = user?.role ? (user.role.charAt(0) + user.role.slice(1).toLowerCase()) : 'Super Admin'
+  const isAgent = user?.role === 'AGENT'
+  const userName = user?.name || (isAgent ? 'Pawan (Field Advisor)' : 'System Administrator')
+  const userEmail = user?.email || (isAgent ? 'agent@gmail.com' : 'admin@gmail.com')
+  const userRole = isAgent ? 'Field Agent' : 'Super Admin'
   const userInitials = userName
     .split(' ')
     .filter(Boolean)
     .map((p) => p[0])
     .join('')
     .substring(0, 2)
-    .toUpperCase() || 'AD'
+    .toUpperCase() || (isAgent ? 'AG' : 'AD')
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -182,12 +183,22 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
             id="user-menu-btn"
             aria-expanded={userMenuOpen}
           >
-            <div className="user-avatar" aria-hidden="true" style={{ background: 'linear-gradient(135deg, #168BFF, #20B8FF)' }}>
+            <div
+              className="user-avatar"
+              aria-hidden="true"
+              style={{
+                background: isAgent
+                  ? 'linear-gradient(135deg, #059669, #10B981)'
+                  : 'linear-gradient(135deg, #168BFF, #20B8FF)'
+              }}
+            >
               {userInitials}
             </div>
             <div className="hidden sm:block" style={{ textAlign: 'left' }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#172033' }}>{userName}</div>
-              <div style={{ fontSize: 11.5, color: '#64748B' }}>{userRole}</div>
+              <div style={{ fontSize: 11.5, color: isAgent ? '#059669' : '#64748B', fontWeight: isAgent ? 600 : 500 }}>
+                {isAgent ? 'Field Agent' : 'Super Admin'}
+              </div>
             </div>
             <ChevronDown size={15} style={{ color: '#64748B' }} />
           </button>
@@ -202,7 +213,7 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
                 border: '1px solid #E2E8F0',
                 borderRadius: 12,
                 boxShadow: '0 10px 25px rgba(6,20,38,0.12)',
-                width: 220,
+                width: 230,
                 zIndex: 100,
                 overflow: 'hidden',
               }}
@@ -212,15 +223,23 @@ export default function Topbar({ collapsed, onToggleMobile, sidebarWidth }) {
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: '#172033' }}>{userName}</div>
                 <div style={{ fontSize: 12, color: '#64748B' }}>{userEmail}</div>
                 <div style={{ marginTop: 6, display: 'inline-block' }}>
-                  <span className="badge badge-blue" style={{ fontSize: 11, padding: '2px 8px' }}>
-                    {userRole}
+                  <span
+                    className={isAgent ? "badge badge-green" : "badge badge-blue"}
+                    style={{ fontSize: 11, padding: '2px 8px' }}
+                  >
+                    {isAgent ? 'Field Agent • Advisor' : 'Super Admin • Full Access'}
                   </span>
                 </div>
               </div>
-              {[
-                { icon: User, label: 'My Profile', action: () => { setUserMenuOpen(false); navigate('/settings') } },
-                { icon: Settings, label: 'System Settings', action: () => { setUserMenuOpen(false); navigate('/settings') } },
-              ].map(({ icon: Icon, label, action }) => (
+              {(isAgent
+                ? [
+                    { icon: User, label: 'Advisor Portfolio', action: () => { setUserMenuOpen(false); navigate('/customers') } },
+                  ]
+                : [
+                    { icon: User, label: 'Super Admin Profile', action: () => { setUserMenuOpen(false); navigate('/settings') } },
+                    { icon: Settings, label: 'Platform Settings', action: () => { setUserMenuOpen(false); navigate('/settings') } },
+                  ]
+              ).map(({ icon: Icon, label, action }) => (
                 <button
                   key={label}
                   className="btn btn-ghost"

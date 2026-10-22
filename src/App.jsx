@@ -25,6 +25,8 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import NotFound from './pages/NotFound'
 
+import AdminGuard from './components/auth/AdminGuard'
+
 export default function App() {
   return (
     <AuthProvider>
@@ -37,7 +39,7 @@ export default function App() {
           {/* Root redirect */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-          {/* Admin / Portal Routes */}
+          {/* Portal Routes */}
           <Route element={<AdminLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/customers" element={<Customers />} />
@@ -51,14 +53,14 @@ export default function App() {
             <Route path="/claims" element={<Claims />} />
             <Route path="/claims/:id" element={<ClaimDetails />} />
             <Route path="/claim-processing" element={<ClaimProcessing />} />
-            <Route path="/agents" element={<Agents />} />
-            <Route path="/agents/:id" element={<AgentDetails />} />
+            <Route path="/agents" element={<AdminGuard><Agents /></AdminGuard>} />
+            <Route path="/agents/:id" element={<AdminGuard><AgentDetails /></AdminGuard>} />
             <Route path="/beneficiaries" element={<Beneficiaries />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/renewals" element={<Renewals />} />
-            <Route path="/insurance-companies" element={<InsuranceCompanies />} />
+            <Route path="/insurance-companies" element={<AdminGuard><InsuranceCompanies /></AdminGuard>} />
             <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings" element={<AdminGuard><Settings /></AdminGuard>} />
           </Route>
 
           {/* 404 Route */}
