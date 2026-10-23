@@ -54,6 +54,9 @@ const AgentClaimDetail = lazy(() => import('./pages/agent/AgentClaimDetail'))
 const AgentRenewals = lazy(() => import('./pages/agent/AgentRenewals'))
 const AgentDocuments = lazy(() => import('./pages/agent/AgentDocuments'))
 const AgentPerformance = lazy(() => import('./pages/agent/AgentPerformance'))
+const AgentActivity = lazy(() => import('./pages/agent/AgentActivity'))
+const AgentProfile = lazy(() => import('./pages/agent/AgentProfile'))
+const CustomerCompanies = lazy(() => import('./pages/user/CustomerCompanies'))
 
 // ── Customer portal (/user) ──
 const CustomerOnboarding = lazy(() => import('./pages/user/CustomerOnboarding'))
@@ -162,6 +165,8 @@ export default function App() {
               <Route path="renewals" element={<AgentRenewals />} />
               <Route path="documents" element={<AgentDocuments />} />
               <Route path="performance" element={<AgentPerformance />} />
+              <Route path="activity" element={<AgentActivity />} />
+              <Route path="profile" element={<AgentProfile />} />
               <Route path="notifications" element={<NotificationsPage />} />
             </Route>
           </Route>
@@ -174,6 +179,7 @@ export default function App() {
             <Route path="/user" element={<CustomerLayout />}>
               <Route index element={<CustomerHome />} />
               <Route path="plans" element={<CustomerPlans />} />
+              <Route path="companies" element={<CustomerCompanies />} />
               <Route path="apply/:policyTypeId" element={<CustomerApply />} />
               <Route path="applications" element={<CustomerApplications />} />
               <Route path="applications/:id" element={<CustomerApplicationDetail />} />

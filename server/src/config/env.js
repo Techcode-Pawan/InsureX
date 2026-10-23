@@ -23,6 +23,8 @@ export const env = {
   UPLOAD_DIR: process.env.UPLOAD_DIR || path.resolve(__dirname, '../../uploads'),
   // Name of a configured online payment provider. Empty = no gateway; payments are submitted for manual verification.
   PAYMENT_GATEWAY_PROVIDER: process.env.PAYMENT_GATEWAY_PROVIDER || '',
+  // Time zone used for analytics date ranges and day/week/month buckets.
+  APP_TIMEZONE: process.env.APP_TIMEZONE || 'Asia/Kolkata',
   // Prisma interactive transaction limits (ms); generous defaults suit remote databases such as Neon.
   DB_TX_MAX_WAIT_MS: Number(process.env.DB_TX_MAX_WAIT_MS) || 10000,
   DB_TX_TIMEOUT_MS: Number(process.env.DB_TX_TIMEOUT_MS) || 20000,

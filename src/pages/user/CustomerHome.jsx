@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
-import { Compass, FilePlus2, Upload, Wallet, RefreshCcw } from 'lucide-react'
+import { Compass, FilePlus2, Upload, Wallet, RefreshCcw, Heart, Clock } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useApi } from '../../lib/useApi'
 import { inr, inrCompact, date, relativeDays, daysUntil, timeAgo, titleCase } from '../../lib/format'
 import { Panel, PanelLink, DataState, Steps, Notice } from '../../components/panel'
 import { StatusBadge } from '../../components/ui/Badge'
+import { RefreshBar } from '../../components/charts'
 import { APP_STEPS, appStepProps } from './CustomerApplications'
 import '../../styles/user.css'
 
@@ -15,7 +16,8 @@ function greeting() {
 
 export default function CustomerHome() {
   const { user } = useAuth()
-  const { data: o, loading, error, reload } = useApi('/me/overview')
+  const POLL_MS = 60000
+  const { data: o, loading, error, reload, refreshing, lastUpdated } = useApi('/me/overview', {}, { pollMs: POLL_MS })
 
   const next = o?.upcomingPremiums?.[0]
   const overdueCount = o?.upcomingPremiums?.filter((p) => p.status === 'OVERDUE').length || 0
@@ -47,10 +49,29 @@ export default function CustomerHome() {
         <Link to="/user/documents" className="cp-shortcut"><Upload size={20} aria-hidden="true" /><span>Upload a document<small>ID, income or claim evidence</small></span></Link>
       </nav>
 
-      <DataState loading={loading} error={error} onRetry={reload} rows={6}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <RefreshBar lastUpdated={lastUpdated} refreshing={refreshing} onRefresh={reload} pollMs={POLL_MS} />
+      </div>
+
+      <DataState loading={loading && !o} error={!o ? error : null} onRetry={reload} rows={6}>
         {o && (
           <div className="px-grid main-side">
             <div className="cp-stack">
+              {o.documentsNeedingAction?.length > 0 && (
+                <Notice tone="warn">
+                  <div className="cp-attn">
+                    <strong>{o.documentsNeedingAction.length === 1 ? 'A document needs your attention' : `${o.documentsNeedingAction.length} documents need your attention`}</strong>
+                    {o.documentsNeedingAction.map((d) => (
+                      <div key={d.id}>
+                        {d.name} ({d.documentNumber}) · {d.verificationStatus === 'REJECTED' ? 'rejected' : 'more information needed'}
+                        {d.verificationNotes ? `: ${d.verificationNotes}` : ''}
+                      </div>
+                    ))}
+                    <span><Link to="/user/documents?upload=1" className="panel-link">Upload a replacement</Link></span>
+                  </div>
+                </Notice>
+              )}
+
               {overdueCount > 0 && (
                 <Notice tone="warn">
                   {overdueCount === 1 ? 'One premium is' : `${overdueCount} premiums are`} overdue. <Link to="/user/payments" className="panel-link">Review payments</Link>
@@ -145,6 +166,29 @@ export default function CustomerHome() {
             </div>
 
             <div className="cp-stack">
+              {o.pendingPayments?.count > 0 && (
+                <Panel title="Payments awaiting verification" action={<PanelLink to="/user/payments">Details</PanelLink>}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <Clock size={18} aria-hidden="true" style={{ color: 'var(--status-amber-text)', flexShrink: 0, marginTop: 2 }} />
+                    <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5 }}>
+                      <strong>{inr(o.pendingPayments.amount, { exact: true })}</strong> across {o.pendingPayments.count} payment{o.pendingPayments.count === 1 ? '' : 's'} you submitted
+                      {' '}is waiting to be matched against bank records. It is not yet applied to your balance.
+                    </p>
+                  </div>
+                </Panel>
+              )}
+
+              <Panel title="Beneficiaries" action={<PanelLink to="/user/beneficiaries">Manage</PanelLink>}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <Heart size={18} aria-hidden="true" style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                  <p style={{ margin: 0, fontSize: 13.5 }}>
+                    {o.beneficiaryCount > 0
+                      ? `${o.beneficiaryCount} beneficiar${o.beneficiaryCount === 1 ? 'y is' : 'ies are'} named across your policies.`
+                      : o.activePolicies.length > 0 ? 'No beneficiaries named yet. Add the people who should receive your benefit.' : 'You can name beneficiaries once a policy is issued.'}
+                  </p>
+                </div>
+              </Panel>
+
               <Panel flush title="Renewals" action={<PanelLink to="/user/renewals">Renewals</PanelLink>}>
                 {o.renewalOpportunities.length === 0 && o.renewalsDue.length === 0 ? (
                   <p className="muted" style={{ padding: 18, margin: 0 }}>No renewals due in the next 60 days.</p>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FolderOpen, RefreshCcw, Heart, Bell, Archive, LogOut, ChevronRight, Phone, Mail } from 'lucide-react'
+import { FolderOpen, RefreshCcw, Heart, Bell, Archive, LogOut, ChevronRight, Phone, Mail, Building2 } from 'lucide-react'
 import api from '../../services/apiClient'
 import { useAuth } from '../../context/AuthContext'
 import { useApi } from '../../lib/useApi'
@@ -113,6 +113,7 @@ const LINKS = [
   { to: '/user/applications', label: 'My applications', icon: FolderOpen },
   { to: '/user/renewals', label: 'Renewals', icon: RefreshCcw },
   { to: '/user/beneficiaries', label: 'Beneficiaries', icon: Heart },
+  { to: '/user/companies', label: 'Insurers', icon: Building2 },
   { to: '/user/documents', label: 'Documents', icon: Archive },
   { to: '/user/notifications', label: 'Notifications', icon: Bell },
 ]

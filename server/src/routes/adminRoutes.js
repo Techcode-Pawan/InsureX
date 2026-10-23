@@ -9,6 +9,7 @@ import { paginate, pageResult } from '../lib/common.js'
 import { recordEvent } from '../lib/events.js'
 import * as dashboardService from '../services/dashboardService.js'
 import * as premiumService from '../services/premiumService.js'
+import * as analyticsService from '../services/analyticsService.js'
 import {
   uuidParam,
   adminCreateUserSchema,
@@ -23,6 +24,11 @@ const idParam = validate({ params: uuidParam })
 
 router.get('/overview', asyncHandler(async (req, res) => {
   res.json({ success: true, data: await dashboardService.getAdminOverview() })
+}))
+
+// Filterable analytics: ?from=YYYY-MM-DD&to=YYYY-MM-DD&granularity=day|week|month&agentId&policyTypeId&companyId
+router.get('/analytics', asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await analyticsService.getAnalytics({ role: 'ADMIN', query: req.query }) })
 }))
 
 router.get('/activity', asyncHandler(async (req, res) => {

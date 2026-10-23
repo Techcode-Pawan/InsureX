@@ -1,0 +1,20 @@
+/* Admin operations dashboard (src/pages/admin/AdminDashboard.jsx) */
+.admin-dash .page-header .refresh-bar { margin-right: 4px; }
+
+.dash-filters { padding: 14px 16px; margin-bottom: 18px; display: grid; gap: 12px; }
+.dash-filter-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.dash-filter { display: grid; gap: 4px; min-width: 180px; flex: 1 1 180px; max-width: 280px; }
+.dash-filter-label { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); }
+.dash-filter .select { height: 34px; font-size: 13px; }
+.dash-filter-note { margin: 0; font-size: 12px; color: var(--color-text-muted); line-height: 1.5; }
+
+.dash-section-label { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-secondary); }
+.dash-section-label span { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--color-text-muted); font-size: 12.5px; }
+
+.admin-dash .kpi-band + .kpi-band { margin-top: -6px; }
+.dash-block { margin-bottom: 20px; }
+
+@media (max-width: 640px) {
+  .dash-filter { max-width: none; }
+  .admin-dash .page-header .refresh-bar { width: 100%; }
+}
