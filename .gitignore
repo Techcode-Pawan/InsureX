@@ -28,3 +28,6 @@ server/.env.*
 *.njsproj
 *.sln
 *.sw?
+
+# Uploaded customer documents (never commit)
+server/uploads/

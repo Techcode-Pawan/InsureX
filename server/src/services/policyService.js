@@ -1,19 +1,26 @@
 import prisma from '../config/db.js'
 import { AppError } from '../middleware/errorHandler.js'
+import { paginate, pageResult } from '../lib/common.js'
+import { recordEvent } from '../lib/events.js'
 
 function generatePolicyNumber() {
   const n = Math.floor(1000 + Math.random() * 9000)
   return `POL-2025-${n}`
 }
 
-export async function getPolicies({ search, status, policyTypeId, customerId, page = 1, limit = 10 }) {
-  const skip = (Number(page) - 1) * Number(limit)
-  const take = Number(limit)
+export async function getPolicies({ search, status, policyTypeId, customerId, agentId, expiringWithinDays, ...query }) {
+  const pg = paginate(query)
+  const { skip, take } = pg
 
   const where = {}
   if (status) where.status = status
   if (policyTypeId) where.policyTypeId = policyTypeId
   if (customerId) where.customerId = customerId
+  if (agentId) where.agentId = agentId
+  if (expiringWithinDays) {
+    const days = Math.min(365, Math.max(1, Number.parseInt(expiringWithinDays, 10) || 60))
+    where.expiryDate = { gte: new Date(), lte: new Date(Date.now() + days * 86400000) }
+  }
   if (search) {
     where.OR = [
       { policyNumber: { contains: search, mode: 'insensitive' } },
@@ -39,13 +46,7 @@ export async function getPolicies({ search, status, policyTypeId, customerId, pa
     }),
   ])
 
-  return {
-    total,
-    page: Number(page),
-    limit: Number(limit),
-    totalPages: Math.ceil(total / take),
-    data: policies,
-  }
+  return pageResult(pg, total, policies)
 }
 
 export async function getPolicyById(id) {
@@ -98,13 +99,40 @@ export async function createPolicy(data) {
   })
 }
 
-export async function updatePolicy(id, data) {
-  if (data.startDate) data.startDate = new Date(data.startDate)
-  if (data.expiryDate) data.expiryDate = new Date(data.expiryDate)
-  return prisma.insurancePolicy.update({ where: { id }, data })
+// Oversight edits only. Ownership, cover and pricing come from underwriting and are never edited here.
+const EDITABLE = ['status', 'companyId', 'agentId']
+
+export async function updatePolicy(id, data, actor = null) {
+  const policy = await prisma.insurancePolicy.findUnique({ where: { id } })
+  if (!policy) throw new AppError('Policy not found.', 404)
+  const safe = Object.fromEntries(Object.entries(data).filter(([k]) => EDITABLE.includes(k)))
+  if (Object.keys(safe).length === 0) {
+    throw new AppError('Only status, insurer and servicing agent can be changed on an issued policy.', 400)
+  }
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.insurancePolicy.update({ where: { id }, data: safe })
+    await recordEvent({
+      actor,
+      action: 'POLICY_UPDATED',
+      entityType: 'InsurancePolicy',
+      entityId: id,
+      customerId: policy.customerId,
+      agentId: updated.agentId,
+      summary: `Policy ${policy.policyNumber} updated (${Object.keys(safe).join(', ')}).`,
+      notifyCustomer: safe.status && safe.status !== policy.status
+        ? { title: 'Policy status changed', message: `Policy ${policy.policyNumber} is now ${safe.status.toLowerCase()}.`, link: `/user/policies/${id}` }
+        : undefined,
+    }, tx)
+    return updated
+  })
 }
 
 export async function deletePolicy(id) {
+  const policy = await prisma.insurancePolicy.findUnique({ where: { id } })
+  if (!policy) throw new AppError('Policy not found.', 404)
+  if (policy.status === 'ACTIVE') {
+    throw new AppError('Active policies cannot be deleted. Cancel the policy instead.', 400)
+  }
   const [claimCount, paymentCount] = await Promise.all([
     prisma.claim.count({ where: { policyId: id } }),
     prisma.premiumPayment.count({ where: { policyId: id } }),

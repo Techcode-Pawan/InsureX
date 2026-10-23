@@ -29,7 +29,7 @@ export async function getPayments(req, res, next) {
 
 export async function createPayment(req, res, next) {
   try {
-    const result = await premiumService.createPayment(req.body)
+    const result = await premiumService.createPayment(req.body, req.user)
     res.status(201).json({
       success: true,
       message: 'Premium payment processed successfully.',

@@ -45,9 +45,12 @@ export async function updatePolicyType(id, data) {
 }
 
 export async function deletePolicyType(id) {
-  const linkedPolicies = await prisma.insurancePolicy.count({ where: { policyTypeId: id } })
-  if (linkedPolicies > 0) {
-    throw new AppError('Cannot delete policy type with linked policies.', 400)
+  const [linkedPolicies, linkedApplications] = await Promise.all([
+    prisma.insurancePolicy.count({ where: { policyTypeId: id } }),
+    prisma.insuranceApplication.count({ where: { policyTypeId: id } }),
+  ])
+  if (linkedPolicies > 0 || linkedApplications > 0) {
+    throw new AppError(`Cannot delete this policy type: ${linkedPolicies} policies and ${linkedApplications} applications reference it. Set it to Inactive to stop new applications.`, 400)
   }
   return prisma.policyType.delete({ where: { id } })
 }

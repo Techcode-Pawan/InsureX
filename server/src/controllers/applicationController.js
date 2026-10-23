@@ -20,7 +20,7 @@ export async function getApplicationById(req, res, next) {
 
 export async function createApplication(req, res, next) {
   try {
-    const application = await applicationService.createApplication(req.body)
+    const application = await applicationService.createApplication(req.body, req.user)
     res.status(201).json({
       success: true,
       message: 'Insurance application submitted successfully.',
@@ -46,7 +46,7 @@ export async function updateApplication(req, res, next) {
 
 export async function approveApplication(req, res, next) {
   try {
-    const result = await applicationService.approveApplication(req.params.id, req.body)
+    const result = await applicationService.approveApplication(req.params.id, req.body, req.user)
     res.json({
       success: true,
       message: 'Application approved and policy issued successfully.',
@@ -59,7 +59,7 @@ export async function approveApplication(req, res, next) {
 
 export async function rejectApplication(req, res, next) {
   try {
-    const application = await applicationService.rejectApplication(req.params.id, req.body)
+    const application = await applicationService.rejectApplication(req.params.id, req.body, req.user)
     res.json({
       success: true,
       message: 'Application rejected.',

@@ -8,5 +8,6 @@ const router = Router()
 router.get('/', documentController.getDocuments)
 router.post('/', validate({ body: documentSchema }), documentController.createDocument)
 router.put('/:id', validate({ body: documentSchema.partial() }), documentController.updateDocument)
+router.get('/:id/download', documentController.downloadDocument)
 
 export default router

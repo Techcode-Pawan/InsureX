@@ -1,10 +1,12 @@
 // ============================================================
 // InsureX Frontend Centralized API Client
-// Handles REST communications with Express + PostgreSQL backend
-// Features transparent offline mock fallback and token management
+// Handles REST communication with the Express + PostgreSQL backend.
+// There is no offline/mock mode: if the API is unreachable the UI shows an error
+// instead of fabricated data or fake success.
 // ============================================================
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+const TOKEN_KEY = 'insurex_token'
 
 class ApiClient {
   constructor() {
@@ -12,100 +14,117 @@ class ApiClient {
   }
 
   getToken() {
-    return localStorage.getItem('insurex_token') || null
+    try {
+      return localStorage.getItem(TOKEN_KEY) || null
+    } catch {
+      return null
+    }
   }
 
   setToken(token) {
-    if (token) localStorage.setItem('insurex_token', token)
-    else localStorage.removeItem('insurex_token')
-  }
-
-  getHeaders() {
-    const headers = {
-      'Content-Type': 'application/json',
-    }
-    const token = this.getToken()
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-    return headers
-  }
-
-  async request(endpoint, options = {}, mockFallback = null) {
-    const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
-
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 4000) // 4s timeout
+      if (token) localStorage.setItem(TOKEN_KEY, token)
+      else localStorage.removeItem(TOKEN_KEY)
+    } catch {
+      /* storage unavailable: session lasts for this page only */
+    }
+  }
 
-      const response = await fetch(url, {
+  authHeader() {
+    const token = this.getToken()
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  }
+
+  async raw(endpoint, options = {}) {
+    const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), options.timeout || 15000)
+    try {
+      return await fetch(url, {
         ...options,
-        headers: {
-          ...this.getHeaders(),
-          ...(options.headers || {}),
-        },
+        headers: { ...this.authHeader(), ...(options.headers || {}) },
         signal: controller.signal,
       })
-
-      clearTimeout(timeoutId)
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        const errorMsg = data.message || `API Request failed with status ${response.status}`
-        const error = new Error(errorMsg)
-        error.status = response.status
-        error.isApiError = true
-        throw error
-      }
-
-      return { data, isLive: true }
     } catch (err) {
-      // Do not silently mask API errors (4xx, 5xx) with mock fallback
-      if (err.isApiError) {
-        throw err
-      }
-
-      // Report network unreachable / offline errors explicitly
-      console.error(`[InsureX API Error] Connection to ${url} failed:`, err.message)
-      if (typeof window !== 'undefined' && window.dispatchEvent) {
-        window.dispatchEvent(new CustomEvent('insurex:api-error', {
-          detail: { url, message: err.message },
-        }))
-      }
-
-      if (mockFallback !== null && mockFallback !== undefined) {
-        console.warn(`[InsureX API] Offline demonstration mode active for ${url}.`)
-        return { data: mockFallback, isLive: false, fallbackNotice: `Backend offline: ${err.message}` }
-      }
-      throw err
+      const error = new Error('Unable to reach the InsureX server. Check your connection and try again.')
+      error.isNetworkError = true
+      error.cause = err
+      window.dispatchEvent(new CustomEvent('insurex:api-error', { detail: { url, message: err.message } }))
+      throw error
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 
-  get(endpoint, params = {}, mockFallback = null) {
+  async handle(response, endpoint) {
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const error = new Error(data.message || `Request failed (${response.status}).`)
+      error.status = response.status
+      error.errors = data.errors
+      error.isApiError = true
+      // An expired or revoked session anywhere in the app signs the user out.
+      if (response.status === 401 && !endpoint.startsWith('/auth/login')) {
+        window.dispatchEvent(new CustomEvent('insurex:unauthorized'))
+      }
+      throw error
+    }
+    return { data, isLive: true }
+  }
+
+  async request(endpoint, options = {}) {
+    const response = await this.raw(endpoint, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    })
+    return this.handle(response, endpoint)
+  }
+
+  // The third argument is accepted for backwards compatibility with existing callers and ignored.
+  get(endpoint, params = {}) {
     const query = new URLSearchParams(
-      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
     ).toString()
-    const url = query ? `${endpoint}?${query}` : endpoint
-    return this.request(url, { method: 'GET' }, mockFallback)
+    return this.request(query ? `${endpoint}?${query}` : endpoint, { method: 'GET' })
   }
 
-  post(endpoint, body = {}, mockFallback = null) {
-    return this.request(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }, mockFallback)
+  post(endpoint, body = {}) {
+    return this.request(endpoint, { method: 'POST', body: JSON.stringify(body) })
   }
 
-  put(endpoint, body = {}, mockFallback = null) {
-    return this.request(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    }, mockFallback)
+  put(endpoint, body = {}) {
+    return this.request(endpoint, { method: 'PUT', body: JSON.stringify(body) })
   }
 
-  delete(endpoint, mockFallback = null) {
-    return this.request(endpoint, { method: 'DELETE' }, mockFallback)
+  patch(endpoint, body = {}) {
+    return this.request(endpoint, { method: 'PATCH', body: JSON.stringify(body) })
+  }
+
+  delete(endpoint) {
+    return this.request(endpoint, { method: 'DELETE' })
+  }
+
+  // multipart/form-data upload (browser sets the boundary header)
+  async upload(endpoint, formData) {
+    const response = await this.raw(endpoint, { method: 'POST', body: formData, timeout: 60000 })
+    return this.handle(response, endpoint)
+  }
+
+  // Authorised file download: fetch with the bearer token, then save via an object URL.
+  async download(endpoint, fallbackName = 'document') {
+    const response = await this.raw(endpoint, { method: 'GET', timeout: 60000 })
+    if (!response.ok) await this.handle(response, endpoint)
+    const blob = await response.blob()
+    const disposition = response.headers.get('Content-Disposition') || ''
+    const match = disposition.match(/filename="?([^";]+)"?/)
+    const href = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = href
+    a.download = match ? match[1] : fallbackName
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(href), 1000)
   }
 }
 

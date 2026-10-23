@@ -1,10 +1,6 @@
 import prisma from '../config/db.js'
 import { AppError } from '../middleware/errorHandler.js'
-
-function generateAgentNumber() {
-  const n = Math.floor(100 + Math.random() * 900)
-  return `AGT-${n}`
-}
+import { uniqueNumber } from '../lib/common.js'
 
 export async function getAgents({ search, status, region }) {
   const where = {}
@@ -26,7 +22,7 @@ export async function getAgents({ search, status, region }) {
     include: {
       company: { select: { id: true, name: true } },
       _count: {
-        select: { policies: true, claims: true },
+        select: { policies: true, claims: true, assignedCustomers: true },
       },
     },
   })
@@ -36,14 +32,27 @@ export async function getAgentById(id) {
   const agent = await prisma.insuranceAgent.findUnique({
     where: { id },
     include: {
-      company: true,
+      company: { select: { id: true, name: true } },
+      user: { select: { id: true, email: true, isActive: true, lastLoginAt: true } },
+      assignedCustomers: {
+        orderBy: { lastName: 'asc' },
+        select: { id: true, customerNumber: true, firstName: true, lastName: true, city: true, status: true, phone: true },
+      },
       policies: {
-        include: { customer: true, policyType: true },
+        orderBy: { expiryDate: 'asc' },
+        select: {
+          id: true, policyNumber: true, status: true, sumAssured: true, premiumAmount: true, expiryDate: true,
+          customer: { select: { id: true, firstName: true, lastName: true } }, policyType: { select: { name: true } },
+        },
       },
       claims: {
-        include: { customer: true },
+        orderBy: { claimDate: 'desc' },
+        select: { id: true, claimNumber: true, status: true, claimedAmount: true, claimDate: true, customer: { select: { id: true, firstName: true, lastName: true } } },
       },
-      claimProcessings: true,
+      assistedApplications: {
+        orderBy: { applicationDate: 'desc' },
+        select: { id: true, applicationNumber: true, status: true, applicationDate: true, requestedCoverage: true, customer: { select: { firstName: true, lastName: true } }, policyType: { select: { name: true } } },
+      },
     },
   })
   if (!agent) throw new AppError('Agent not found.', 404)
@@ -51,21 +60,21 @@ export async function getAgentById(id) {
 }
 
 export async function createAgent(data) {
-  let agentNumber = generateAgentNumber()
-  let exists = await prisma.insuranceAgent.findUnique({ where: { agentNumber } })
-  while (exists) {
-    agentNumber = generateAgentNumber()
-    exists = await prisma.insuranceAgent.findUnique({ where: { agentNumber } })
-  }
-
+  const agentNumber = await uniqueNumber('AGT', 'insuranceAgent', 'agentNumber')
   return prisma.insuranceAgent.create({
-    data: {
-      ...data,
-      agentNumber,
-    },
+    data: { ...data, email: data.email.toLowerCase(), agentNumber },
   })
 }
 
+// Deactivating an agent also disables their login and ends their sessions; customers stay assigned
+// until an administrator reassigns them.
 export async function updateAgent(id, data) {
-  return prisma.insuranceAgent.update({ where: { id }, data })
+  if (data.email) data.email = data.email.toLowerCase()
+  return prisma.$transaction(async (tx) => {
+    const agent = await tx.insuranceAgent.update({ where: { id }, data })
+    if (data.status === 'INACTIVE' && agent.userId) {
+      await tx.user.update({ where: { id: agent.userId }, data: { isActive: false, tokenVersion: { increment: 1 } } })
+    }
+    return agent
+  })
 }

@@ -11,7 +11,7 @@ export async function getRenewals(req, res, next) {
 
 export async function createRenewal(req, res, next) {
   try {
-    const renewal = await renewalService.createRenewal(req.body)
+    const renewal = await renewalService.createRenewal(req.body, req.user)
     res.status(201).json({
       success: true,
       message: 'Policy renewal scheduled successfully.',
@@ -24,7 +24,7 @@ export async function createRenewal(req, res, next) {
 
 export async function updateRenewal(req, res, next) {
   try {
-    const renewal = await renewalService.updateRenewal(req.params.id, req.body)
+    const renewal = await renewalService.updateRenewal(req.params.id, req.body, req.user)
     res.json({
       success: true,
       message: 'Policy renewal updated successfully.',

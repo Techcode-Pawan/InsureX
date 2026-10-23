@@ -1,315 +1,236 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft, Pencil, Shield, IndianRupee, Calendar, CalendarClock,
-  User, Mail, Phone, MapPin, FileText, AlertCircle, RefreshCcw,
-  Users, CheckCircle2, Banknote,
-} from 'lucide-react'
-
+import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft, Pencil, RefreshCcw, Download } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
-import Card, { CardHeader } from '../components/ui/Card'
-import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
-import EmptyState from '../components/ui/EmptyState'
-import { Toast } from '../components/ui/Toast'
+import { StatusBadge } from '../components/ui/Badge'
+import { Panel, KpiBand, Kpi, Facts, Notice, DataState, Segmented } from '../components/panel'
 import PolicyFormModal from '../components/policies/PolicyFormModal'
+import RecordPaymentModal from '../components/policies/RecordPaymentModal'
+import OpenRenewalModal from '../components/policies/OpenRenewalModal'
+import { useApi } from '../lib/useApi'
+import api from '../services/apiClient'
+import { inr, date, daysUntil, fullName, titleCase } from '../lib/format'
 
-import {
-  initialPolicies, formatINR,
-  getPolicyPremiums, getPolicyPayments, getPolicyClaims,
-  getPolicyBeneficiaries, getPolicyRenewals, getCustomerForPolicy,
-  POLICY_STATUS, PREMIUM_STATUS, CLAIM_STATUS, RENEWAL_STATUS, PAYMENT_STATUS,
-} from '../data/policyData'
+const TABS = [
+  { value: 'premiums', label: 'Premiums' },
+  { value: 'payments', label: 'Payments' },
+  { value: 'beneficiaries', label: 'Beneficiaries' },
+  { value: 'claims', label: 'Claims' },
+  { value: 'renewals', label: 'Renewals' },
+  { value: 'documents', label: 'Documents' },
+]
+const UNPAID = ['DUE', 'OVERDUE', 'PARTIALLY_PAID', 'GRACE_PERIOD']
+const OPEN_RENEWAL = ['UPCOMING', 'OVERDUE', 'GRACE_PERIOD']
 
-// ── Helpers ───────────────────────────────────────────────────
-function SBadge({ map, status }) {
-  const cfg = map[status] || { label: status, variant: 'gray' }
-  return <Badge variant={cfg.variant} dot>{cfg.label}</Badge>
-}
-
-function InfoRow({ icon: Icon, label, value }) {
-  if (!value) return null
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: '1px solid #F8FAFC' }}>
-      <Icon size={15} style={{ color: '#94A3B8', marginTop: 2, flexShrink: 0 }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1, gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13, color: '#64748B', minWidth: 120 }}>{label}</span>
-        <span style={{ fontSize: 13.5, fontWeight: 600, color: '#172033', textAlign: 'right' }}>{value}</span>
-      </div>
-    </div>
-  )
-}
-
-function MiniKPI({ icon: Icon, color, bg, label, value }) {
-  return (
-    <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <p style={{ margin: '0 0 2px', fontSize: 11.5, fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-          <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#172033' }}>{value}</p>
-        </div>
-        <div style={{ width: 40, height: 40, borderRadius: 11, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Icon size={20} style={{ color }} />
-        </div>
-      </div>
-    </Card>
-  )
-}
-
-// ── Tabs ─────────────────────────────────────────────────────
-const TABS = ['Overview', 'Premiums', 'Payments', 'Claims', 'Beneficiaries', 'Renewals']
-
-function TabBar({ active, onChange }) {
-  return (
-    <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #E2E8F0', marginBottom: 20, overflowX: 'auto' }}>
-      {TABS.map(tab => (
-        <button key={tab} onClick={() => onChange(tab)} role="tab" aria-selected={active === tab}
-          style={{
-            padding: '10px 18px', fontSize: 13.5, fontWeight: active === tab ? 700 : 500,
-            color: active === tab ? '#168BFF' : '#64748B',
-            background: 'none', border: 'none', cursor: 'pointer',
-            borderBottom: `2.5px solid ${active === tab ? '#168BFF' : 'transparent'}`,
-            whiteSpace: 'nowrap', transition: 'all 0.15s ease',
-          }}>{tab}</button>
-      ))}
-    </div>
-  )
-}
-
-function daysBetween(a, b) {
-  return Math.round((new Date(b) - new Date(a)) / 86400000)
-}
-
-// ════════════════════════════════════════════════════════════
 export default function PolicyDetails() {
   const { id } = useParams()
-  const navigate = useNavigate()
-  const [policies, setPolicies] = useState(initialPolicies)
-  const policy = policies.find(p => p.policyId === id)
+  const { data: p, loading, error, reload } = useApi(`/policies/${id}`)
+  const [tab, setTab] = useState('premiums')
+  const [editing, setEditing] = useState(false)
+  const [paying, setPaying] = useState(null)
+  const [renewing, setRenewing] = useState(false)
+  const [message, setMessage] = useState('')
 
-  const [activeTab, setActiveTab] = useState('Overview')
-  const [editOpen, setEditOpen]   = useState(false)
-  const [toast, setToast]         = useState(null)
+  const done = (msg) => { setEditing(false); setPaying(null); setRenewing(false); setMessage(msg); reload() }
 
-  // ── Not found ──────────────────────────────────────────
-  if (!policy) {
+  if (loading && !p) return <DataState loading rows={6} />
+  if (error) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, textAlign: 'center' }}>
-        <div style={{ width: 64, height: 64, borderRadius: 18, background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Shield size={32} style={{ color: '#EF4444' }} />
-        </div>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#172033' }}>Policy Not Found</h2>
-        <p style={{ margin: 0, fontSize: 14, color: '#64748B' }}>No policy with ID <code style={{ background: '#F1F5F9', padding: '2px 6px', borderRadius: 4 }}>{id}</code> was found.</p>
-        <Button variant="primary" icon={ArrowLeft} onClick={() => navigate('/policies')}>Back to Policies</Button>
+      <div>
+        <Link to="/admin/policies" className="panel-link" style={{ marginBottom: 12 }}><ArrowLeft size={14} /> All policies</Link>
+        <DataState error={error} onRetry={error.status === 404 ? undefined : reload} />
       </div>
     )
   }
+  if (!p) return null
 
-  const customer = getCustomerForPolicy(policy.customerId)
-  const premiums = getPolicyPremiums(policy.policyId)
-  const payments = getPolicyPayments(policy.policyId)
-  const claims   = getPolicyClaims(policy.policyId)
-  const bens     = getPolicyBeneficiaries(policy.policyId)
-  const renewals = getPolicyRenewals(policy.policyId)
-
-  const totalPremiumPaid = premiums.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount, 0)
-  const policyDays = daysBetween(policy.startDate, policy.expiryDate)
-
-  function handleEdit(fields) {
-    setPolicies(ps => ps.map(p => p.policyId === policy.policyId ? { ...p, ...fields } : p))
-    setToast({ message: 'Policy updated successfully.', type: 'success' })
-    setEditOpen(false)
-  }
-
-  const stCfg = POLICY_STATUS[policy.status] || { label: policy.status, variant: 'gray' }
-
-  // ── Overview ───────────────────────────────────────────
-  function OverviewTab() {
-    return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16 }} className="details-grid">
-        <Card>
-          <CardHeader title="Policy Information" />
-          <InfoRow icon={Shield}       label="Policy Number"     value={policy.policyNumber} />
-          <InfoRow icon={FileText}     label="Policy Type"       value={policy.policyType} />
-          <InfoRow icon={IndianRupee}  label="Sum Assured"       value={formatINR(policy.sumAssured)} />
-          <InfoRow icon={IndianRupee}  label="Premium"           value={`${formatINR(policy.premiumAmount)} / ${policy.premiumFrequency}`} />
-          <InfoRow icon={Calendar}     label="Start Date"        value={policy.startDate} />
-          <InfoRow icon={CalendarClock}label="Expiry Date"       value={policy.expiryDate} />
-          <InfoRow icon={Calendar}     label="Policy Period"     value={`${policyDays} days`} />
-        </Card>
-
-        {customer ? (
-          <Card>
-            <CardHeader title="Customer Information" actions={
-              <Button variant="ghost" size="sm" onClick={() => navigate(`/customers/${customer.customerId}`)}>
-                View Profile
-              </Button>
-            } />
-            <InfoRow icon={User}   label="Name"    value={`${customer.firstName} ${customer.lastName}`} />
-            <InfoRow icon={Mail}   label="Email"   value={customer.email} />
-            <InfoRow icon={Phone}  label="Phone"   value={customer.phone} />
-            <InfoRow icon={MapPin} label="City"     value={`${customer.city}, ${customer.state}`} />
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader title="Customer Information" />
-            <p style={{ fontSize: 13, color: '#94A3B8' }}>Customer: {policy.customerName} ({policy.customerId})</p>
-          </Card>
-        )}
-      </div>
-    )
-  }
-
-  function TabTable({ title, empty, headers, rows }) {
-    return (
-      <Card padding={false}>
-        <div style={{ padding: '16px 20px' }}><h3 className="card-title">{title}</h3></div>
-        {rows.length === 0
-          ? <EmptyState title={empty} description={`No ${title.toLowerCase()} records for this policy.`} />
-          : <div style={{ overflowX: 'auto' }}>
-              <table className="data-table"><thead><tr>{headers.map(h => <th key={h}>{h}</th>)}</tr></thead>
-                <tbody>{rows}</tbody>
-              </table>
-            </div>
-        }
-      </Card>
-    )
-  }
-
-  function PremiumsTab() {
-    return (
-      <TabTable title="Premium Installments" empty="No premiums" headers={['ID', 'Amount', 'Due Date', 'Paid Date', 'Status']}
-        rows={premiums.map(p => (
-          <tr key={p.premiumId}>
-            <td style={{ fontFamily: 'monospace', fontSize: 12.5, color: '#64748B' }}>{p.premiumId}</td>
-            <td style={{ fontWeight: 700 }}>{formatINR(p.amount)}</td>
-            <td style={{ fontSize: 13, color: '#64748B' }}>{p.dueDate}</td>
-            <td style={{ fontSize: 13, color: '#64748B' }}>{p.paidDate || '—'}</td>
-            <td><SBadge map={PREMIUM_STATUS} status={p.status} /></td>
-          </tr>
-        ))}
-      />
-    )
-  }
-
-  function PaymentsTab() {
-    return (
-      <TabTable title="Payment History" empty="No payments" headers={['ID', 'Amount', 'Date', 'Mode', 'Status']}
-        rows={payments.map(p => (
-          <tr key={p.paymentId}>
-            <td style={{ fontFamily: 'monospace', fontSize: 12.5, color: '#64748B' }}>{p.paymentId}</td>
-            <td style={{ fontWeight: 700 }}>{formatINR(p.amount)}</td>
-            <td style={{ fontSize: 13, color: '#64748B' }}>{p.paymentDate}</td>
-            <td style={{ fontSize: 13 }}>{p.mode}</td>
-            <td><SBadge map={PAYMENT_STATUS} status={p.status} /></td>
-          </tr>
-        ))}
-      />
-    )
-  }
-
-  function ClaimsTab() {
-    return (
-      <TabTable title="Claims" empty="No claims" headers={['ID', 'Amount', 'Date', 'Description', 'Status']}
-        rows={claims.map(c => (
-          <tr key={c.claimId}>
-            <td style={{ fontFamily: 'monospace', fontSize: 12.5, color: '#64748B' }}>{c.claimId}</td>
-            <td style={{ fontWeight: 700, color: '#EF4444' }}>{formatINR(c.claimedAmount)}</td>
-            <td style={{ fontSize: 13, color: '#64748B' }}>{c.claimDate}</td>
-            <td style={{ fontSize: 13, color: '#64748B', maxWidth: 200 }}>{c.description}</td>
-            <td><SBadge map={CLAIM_STATUS} status={c.status} /></td>
-          </tr>
-        ))}
-      />
-    )
-  }
-
-  function BeneficiariesTab() {
-    return (
-      <TabTable title="Beneficiaries" empty="No beneficiaries" headers={['ID', 'Name', 'Relationship', 'Allocation']}
-        rows={bens.map(b => (
-          <tr key={b.beneficiaryId}>
-            <td style={{ fontFamily: 'monospace', fontSize: 12.5, color: '#64748B' }}>{b.beneficiaryId}</td>
-            <td style={{ fontWeight: 600 }}>{b.name}</td>
-            <td style={{ fontSize: 13, color: '#64748B' }}>{b.relationship}</td>
-            <td>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ flex: 1, height: 6, background: '#E2E8F0', borderRadius: 10, maxWidth: 80 }}>
-                  <div style={{ width: `${b.allocation}%`, height: '100%', background: '#168BFF', borderRadius: 10 }} />
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{b.allocation}%</span>
-              </div>
-            </td>
-          </tr>
-        ))}
-      />
-    )
-  }
-
-  function RenewalsTab() {
-    return (
-      <TabTable title="Renewal History" empty="No renewals" headers={['ID', 'Due Date', 'Renewed Date', 'New Premium', 'Status']}
-        rows={renewals.map(r => (
-          <tr key={r.renewalId}>
-            <td style={{ fontFamily: 'monospace', fontSize: 12.5, color: '#64748B' }}>{r.renewalId}</td>
-            <td style={{ fontSize: 13, color: '#64748B' }}>{r.dueDate}</td>
-            <td style={{ fontSize: 13, color: '#64748B' }}>{r.renewedDate || '—'}</td>
-            <td style={{ fontWeight: 600 }}>{formatINR(r.newPremium)}</td>
-            <td><SBadge map={RENEWAL_STATUS} status={r.status} /></td>
-          </tr>
-        ))}
-      />
-    )
-  }
+  const premiums = p.premiums.map((x) => ({ ...x, remainingBalance: Math.max(0, Number(x.amount) - Number(x.paidAmount)) }))
+  const outstanding = premiums.filter((x) => UNPAID.includes(x.status)).reduce((s, x) => s + x.remainingBalance, 0)
+  const paid = p.payments.filter((x) => x.status === 'SUCCESS').reduce((s, x) => s + Number(x.amount), 0)
+  const overdue = premiums.filter((x) => x.status === 'OVERDUE').length
+  const left = daysUntil(p.expiryDate)
+  const hasOpenRenewal = p.renewals.some((r) => OPEN_RENEWAL.includes(r.status))
+  const allocated = p.beneficiaries.reduce((s, b) => s + Number(b.allocationPercentage), 0)
 
   return (
     <div>
-      <PageHeader title={policy.policyNumber} subtitle={policy.policyType}
-        breadcrumbExtra="Policy Details"
+      <Link to="/admin/policies" className="panel-link" style={{ marginBottom: 10 }}><ArrowLeft size={14} aria-hidden="true" /> All policies</Link>
+      <PageHeader
+        title={p.policyNumber}
+        breadcrumbExtra={p.policyNumber}
+        subtitle={`${p.policyType.name} · ${fullName(p.customer)} (${p.customer.customerNumber})`}
         actions={
           <>
-            <Button variant="secondary" size="sm" icon={ArrowLeft} onClick={() => navigate('/policies')}>Back</Button>
-            <Button variant="primary" size="sm" icon={Pencil} onClick={() => setEditOpen(true)}>Edit Policy</Button>
+            {['ACTIVE', 'EXPIRED'].includes(p.status) && !hasOpenRenewal && (
+              <Button variant="secondary" size="sm" icon={RefreshCcw} onClick={() => setRenewing(true)}>Open renewal</Button>
+            )}
+            <Button size="sm" icon={Pencil} onClick={() => setEditing(true)}>Edit</Button>
           </>
         }
       />
+      {message && <div style={{ marginBottom: 12 }}><Notice tone="ok">{message}</Notice></div>}
 
-      {/* Status & summary strip */}
-      <Card style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Shield size={28} style={{ color: '#168BFF' }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#172033' }}>{policy.policyNumber}</h2>
-              <Badge variant={stCfg.variant} dot>{stCfg.label}</Badge>
-            </div>
-            <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>
-              {policy.policyType} · {policy.customerName} · {policy.startDate} to {policy.expiryDate}
-            </p>
-          </div>
-        </div>
-      </Card>
+      <KpiBand cols={4}>
+        <Kpi label="Status" value={<StatusBadge status={p.status} />} foot={p.status === 'ACTIVE' && left !== null ? (left >= 0 ? `${left} days of cover left` : `Ended ${-left} days ago`) : undefined} tone={left !== null && left <= 30 ? 'warn' : ''} />
+        <Kpi label="Sum assured" value={inr(p.sumAssured)} />
+        <Kpi label="Premiums paid" value={inr(paid)} foot={`${p.payments.filter((x) => x.status === 'SUCCESS').length} confirmed payments`} />
+        <Kpi label="Outstanding" value={inr(outstanding)} foot={overdue ? `${overdue} overdue installment${overdue === 1 ? '' : 's'}` : 'Nothing overdue'} tone={overdue ? 'bad' : ''} />
+      </KpiBand>
 
-      {/* Mini KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14, marginBottom: 24 }}>
-        <MiniKPI icon={IndianRupee}  color="#168BFF" bg="#EFF6FF" label="Sum Assured"    value={formatINR(policy.sumAssured)} />
-        <MiniKPI icon={Banknote}     color="#10B981" bg="#F0FDF4" label="Premium Paid"    value={formatINR(totalPremiumPaid)} />
-        <MiniKPI icon={AlertCircle}  color="#F59E0B" bg="#FFFBEB" label="Open Claims"     value={claims.filter(c => ['pending','under_review'].includes(c.status)).length} />
-        <MiniKPI icon={Users}        color="#6366F1" bg="#F5F3FF" label="Beneficiaries"   value={bens.length} />
+      <div className="px-grid main-side" style={{ marginBottom: 16 }}>
+        <Panel title="Policy details">
+          <Facts items={[
+            ['Plan', `${p.policyType.name} (${p.policyType.typeCode})`],
+            ['Term', `${date(p.startDate)} – ${date(p.expiryDate)}`],
+            ['Premium', `${inr(p.premiumAmount, { exact: true })} ${titleCase(p.premiumFrequency)}`],
+            ['Insurer', p.company?.name || 'Not assigned'],
+            ['Servicing agent', p.agent ? `${fullName(p.agent)} (${p.agent.agentNumber})` : 'Not assigned'],
+            ['Issued from', p.applicationId ? 'Approved application' : 'Direct issuance'],
+            ['Created', date(p.createdAt)],
+          ]} />
+        </Panel>
+        <Panel title="Policyholder" action={<Link className="panel-link" to={`/admin/customers/${p.customer.id}`}>Open customer</Link>}>
+          <Facts items={[
+            ['Name', fullName(p.customer)],
+            ['Customer no.', p.customer.customerNumber],
+            ['Email', p.customer.email],
+            ['Phone', p.customer.phone],
+            ['City', `${p.customer.city}, ${p.customer.state}`],
+          ]} />
+        </Panel>
       </div>
 
-      <TabBar active={activeTab} onChange={setActiveTab} />
-      {activeTab === 'Overview'      && <OverviewTab />}
-      {activeTab === 'Premiums'      && <PremiumsTab />}
-      {activeTab === 'Payments'      && <PaymentsTab />}
-      {activeTab === 'Claims'        && <ClaimsTab />}
-      {activeTab === 'Beneficiaries' && <BeneficiariesTab />}
-      {activeTab === 'Renewals'      && <RenewalsTab />}
+      <Panel flush action={<Segmented label="Policy records" value={tab} onChange={setTab} options={TABS} />} title="Records">
+        {tab === 'premiums' && (
+          <DataState empty={premiums.length === 0} emptyText="No premium installments on this policy.">
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead><tr><th scope="col">Installment</th><th scope="col">Due</th><th scope="col">Billing period</th><th scope="col" className="numeric">Amount</th><th scope="col" className="numeric">Paid</th><th scope="col" className="numeric">Balance</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
+                <tbody>
+                  {premiums.map((x) => (
+                    <tr key={x.id}>
+                      <td className="mono">{x.premiumNumber}</td>
+                      <td className="nowrap">{date(x.dueDate)}</td>
+                      <td className="nowrap muted">{x.billingPeriodStart ? `${date(x.billingPeriodStart)} – ${date(x.billingPeriodEnd)}` : '—'}</td>
+                      <td className="numeric">{inr(x.amount, { exact: true })}</td>
+                      <td className="numeric">{inr(x.paidAmount, { exact: true })}</td>
+                      <td className="numeric" style={{ fontWeight: 600 }}>{inr(x.remainingBalance, { exact: true })}</td>
+                      <td><StatusBadge status={x.status} /></td>
+                      <td style={{ textAlign: 'right' }}>
+                        {x.remainingBalance > 0 && <Button size="sm" variant="secondary" onClick={() => setPaying(x)}>Record payment</Button>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </DataState>
+        )}
 
-      <PolicyFormModal open={editOpen} onClose={() => setEditOpen(false)} onSubmit={handleEdit} editData={policy} />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        {tab === 'payments' && (
+          <DataState empty={p.payments.length === 0} emptyText="No payments recorded.">
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead><tr><th scope="col">Payment</th><th scope="col">Date</th><th scope="col">Method</th><th scope="col">Reference</th><th scope="col" className="numeric">Amount</th><th scope="col">Status</th></tr></thead>
+                <tbody>
+                  {p.payments.map((x) => (
+                    <tr key={x.id}>
+                      <td className="mono">{x.paymentNumber}</td>
+                      <td className="nowrap">{date(x.paymentDate)}</td>
+                      <td>{titleCase(x.paymentMethod)}</td>
+                      <td className="mono">{x.transactionReference}</td>
+                      <td className="numeric">{inr(x.amount, { exact: true })}</td>
+                      <td>{x.status === 'PENDING' ? <Link to="/admin/verifications"><StatusBadge status="Awaiting verification" /></Link> : <StatusBadge status={x.status} />}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </DataState>
+        )}
+
+        {tab === 'beneficiaries' && (
+          <DataState empty={p.beneficiaries.length === 0} emptyText="No beneficiaries nominated.">
+            <ul className="rows">
+              {p.beneficiaries.map((b) => (
+                <li key={b.id} className="row">
+                  <div className="row-main">
+                    <div className="row-title">{b.name}</div>
+                    <div className="row-meta">{b.relationship}{b.phone && ` · ${b.phone}`}{b.email && ` · ${b.email}`}</div>
+                  </div>
+                  <div className="row-end row-amount">{Number(b.allocationPercentage)}%</div>
+                </li>
+              ))}
+              <li className="row muted" style={{ fontSize: 12.5 }}>Total allocated: {allocated}%{allocated < 100 && ' (under-allocated)'}</li>
+            </ul>
+          </DataState>
+        )}
+
+        {tab === 'claims' && (
+          <DataState empty={p.claims.length === 0} emptyText="No claims on this policy.">
+            <ul className="rows">
+              {p.claims.map((c) => (
+                <li key={c.id}>
+                  <Link to={`/admin/claims/${c.id}`} className="row">
+                    <div className="row-main">
+                      <div className="row-title">{c.claimNumber} · {c.claimType}</div>
+                      <div className="row-meta">{date(c.claimDate)}</div>
+                    </div>
+                    <div className="row-end">
+                      <div className="row-amount">{inr(c.claimedAmount)}</div>
+                      <StatusBadge status={c.status} />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </DataState>
+        )}
+
+        {tab === 'renewals' && (
+          <DataState empty={p.renewals.length === 0} emptyText="No renewals recorded for this policy.">
+            <ul className="rows">
+              {p.renewals.map((r) => (
+                <li key={r.id} className="row">
+                  <div className="row-main">
+                    <div className="row-title">{r.renewalNumber}</div>
+                    <div className="row-meta">{date(r.newStartDate)} – {date(r.newExpiryDate)}{r.notes && ` · ${r.notes}`}</div>
+                  </div>
+                  <div className="row-end">
+                    <div className="row-amount">{inr(r.renewalPremium)}</div>
+                    <StatusBadge status={r.status} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="pager"><Link to="/admin/renewals" className="panel-link">Process renewals</Link></div>
+          </DataState>
+        )}
+
+        {tab === 'documents' && (
+          <DataState empty={p.documents.length === 0} emptyText="No documents linked to this policy.">
+            <ul className="rows">
+              {p.documents.map((d) => (
+                <li key={d.id} className="row">
+                  <div className="row-main">
+                    <div className="row-title">{d.name}</div>
+                    <div className="row-meta"><span className="mono">{d.documentNumber}</span> · {d.documentType} · {date(d.submissionDate)}</div>
+                  </div>
+                  <div className="row-end" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <StatusBadge status={d.verificationStatus} />
+                    {d.fileUrl && <Button size="sm" variant="secondary" icon={Download} onClick={() => api.download(`/documents/${d.id}/download`, d.name)}>Open</Button>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </DataState>
+        )}
+      </Panel>
+
+      {editing && <PolicyFormModal policy={p} onClose={() => setEditing(false)} onDone={done} />}
+      <RecordPaymentModal premium={paying} policyNumber={p.policyNumber} onClose={() => setPaying(null)} onDone={done} />
+      {renewing && <OpenRenewalModal policy={p} onClose={() => setRenewing(false)} onDone={done} />}
     </div>
   )
 }

@@ -20,7 +20,7 @@ export async function getClaimById(req, res, next) {
 
 export async function createClaim(req, res, next) {
   try {
-    const claim = await claimService.createClaim(req.body)
+    const claim = await claimService.createClaim(req.body, req.user)
     res.status(201).json({
       success: true,
       message: 'Claim filed successfully.',
@@ -33,7 +33,7 @@ export async function createClaim(req, res, next) {
 
 export async function assignClaim(req, res, next) {
   try {
-    const claim = await claimService.assignClaimAgent(req.params.id, req.body.agentId)
+    const claim = await claimService.assignClaimAgent(req.params.id, req.body.agentId, req.user)
     res.json({
       success: true,
       message: 'Agent assigned to claim successfully.',
@@ -46,7 +46,7 @@ export async function assignClaim(req, res, next) {
 
 export async function approveClaim(req, res, next) {
   try {
-    const claim = await claimService.approveClaim(req.params.id, req.body)
+    const claim = await claimService.approveClaim(req.params.id, req.body, req.user)
     res.json({
       success: true,
       message: 'Claim approved successfully.',
@@ -59,7 +59,7 @@ export async function approveClaim(req, res, next) {
 
 export async function rejectClaim(req, res, next) {
   try {
-    const claim = await claimService.rejectClaim(req.params.id, req.body)
+    const claim = await claimService.rejectClaim(req.params.id, req.body, req.user)
     res.json({
       success: true,
       message: 'Claim rejected.',
@@ -72,7 +72,7 @@ export async function rejectClaim(req, res, next) {
 
 export async function settleClaim(req, res, next) {
   try {
-    const claim = await claimService.settleClaim(req.params.id, req.body)
+    const claim = await claimService.settleClaim(req.params.id, req.body, req.user)
     res.json({
       success: true,
       message: 'Claim settlement disbursed and finalized.',

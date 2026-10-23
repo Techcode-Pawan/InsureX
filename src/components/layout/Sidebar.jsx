@@ -1,17 +1,21 @@
-import { NavLink, useLocation, Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, LogIn, LogOut, Shield, Briefcase } from 'lucide-react'
+import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom'
+import { ChevronLeft, ChevronRight, LogIn, LogOut } from 'lucide-react'
 import { getNavSectionsForRole } from '../../config/navConfig'
 import { useAuth } from '../../context/AuthContext'
 
 export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile }) {
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuth()
-
-  const isAgent = user?.role === 'AGENT'
+  const navigate = useNavigate()
   const sections = getNavSectionsForRole(user?.role)
 
+  async function signOut() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
+
   const isActive = (path) => location.pathname === path ||
-    (path !== '/dashboard' && location.pathname.startsWith(path))
+    (path !== '/admin' && location.pathname.startsWith(path))
 
   const sidebarClass = [
     'sidebar',
@@ -29,50 +33,25 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
       />
 
       <aside className={sidebarClass} aria-label="Main Navigation">
-        {/* Logo */}
+        {/* Brand Header */}
         <div className="sidebar-logo">
-          <div className="sidebar-logo-img flex items-center justify-center bg-blue-600 text-white font-black text-sm rounded-lg flex-shrink-0" style={{ width: 36, height: 36, background: isAgent ? 'linear-gradient(135deg, #10B981, #059669)' : 'linear-gradient(135deg, #168BFF, #20B8FF)' }}>
+          <div className="sidebar-logo-img" aria-hidden="true">
             IX
           </div>
-          <div className="sidebar-logo-text" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="sidebar-logo-text">
             <span>
               Insure<span className="text-electric">X</span>
             </span>
-            {!collapsed && (
-              <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.06em', color: isAgent ? '#34D399' : '#60A5FA', textTransform: 'uppercase' }}>
-                {isAgent ? 'Advisor Portal' : 'Admin Console'}
-              </span>
-            )}
+            <span className="sidebar-logo-badge">
+              Operations Console
+            </span>
           </div>
         </div>
 
-        {/* Role Authority Indicator */}
-        {!collapsed && (
-          <div style={{ padding: '0 12px 10px 12px' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 10px',
-                borderRadius: 8,
-                background: isAgent ? 'rgba(16, 185, 129, 0.12)' : 'rgba(22, 139, 255, 0.12)',
-                border: isAgent ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(22, 139, 255, 0.25)',
-                color: isAgent ? '#34D399' : '#93C5FD',
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            >
-              {isAgent ? <Briefcase size={13} /> : <Shield size={13} />}
-              <span>{isAgent ? 'Field Agent Authority' : 'Super Admin Authority'}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation */}
+        {/* Navigation Sections */}
         <nav className="sidebar-nav">
           {sections.map((section) => (
-            <div key={section.label}>
+            <div key={section.label} style={{ marginBottom: 14 }}>
               <div className="sidebar-section-label">{section.label}</div>
               {section.items.map((item) => {
                 const Icon = item.icon
@@ -85,7 +64,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
                       onClick={onCloseMobile}
                       aria-current={active ? 'page' : undefined}
                     >
-                      <Icon className="nav-item-icon" size={18} />
+                      <Icon className="nav-item-icon" size={17} />
                       <span className="nav-item-label">{item.label}</span>
                     </NavLink>
                     {collapsed && (
@@ -98,19 +77,19 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
           ))}
         </nav>
 
-        {/* Footer: Auth & collapse toggle */}
-        <div className="sidebar-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '10px 8px' }}>
+        {/* Footer: User action & collapse toggle */}
+        <div className="sidebar-footer">
           {isAuthenticated ? (
-            <div className="tooltip-wrapper" style={{ marginBottom: 6 }}>
+            <div className="tooltip-wrapper" style={{ marginBottom: 4 }}>
               <button
-                className="nav-item btn-ghost"
-                onClick={logout}
+                className="nav-item"
+                onClick={signOut}
                 style={{ width: '100%', justifyContent: collapsed ? 'center' : 'flex-start', color: '#EF4444' }}
-                title="Log out of current account"
+                title="Sign Out"
               >
-                <LogOut className="nav-item-icon" size={17} />
+                <LogOut className="nav-item-icon" size={16} />
                 {!collapsed && (
-                  <span className="nav-item-label" style={{ fontSize: 13 }}>
+                  <span className="nav-item-label" style={{ fontSize: 12.5 }}>
                     Sign Out
                   </span>
                 )}
@@ -118,16 +97,16 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
               {collapsed && <span className="tooltip">Sign Out ({user?.name || 'User'})</span>}
             </div>
           ) : (
-            <div className="tooltip-wrapper" style={{ marginBottom: 6 }}>
+            <div className="tooltip-wrapper" style={{ marginBottom: 4 }}>
               <Link
                 to="/login"
-                className="nav-item btn-ghost"
-                style={{ width: '100%', justifyContent: collapsed ? 'center' : 'flex-start', color: '#168BFF' }}
-                title="Sign In to access all features"
+                className="nav-item"
+                style={{ width: '100%', justifyContent: collapsed ? 'center' : 'flex-start', color: 'var(--color-primary)' }}
+                title="Sign In"
               >
-                <LogIn className="nav-item-icon" size={17} />
+                <LogIn className="nav-item-icon" size={16} />
                 {!collapsed && (
-                  <span className="nav-item-label" style={{ fontSize: 13, fontWeight: 600 }}>
+                  <span className="nav-item-label" style={{ fontSize: 12.5, fontWeight: 600 }}>
                     Sign In
                   </span>
                 )}
@@ -138,17 +117,17 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
 
           <div className="tooltip-wrapper">
             <button
-              className="nav-item btn-ghost"
+              className="nav-item"
               onClick={onToggleCollapse}
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              style={{ width: '100%', justifyContent: collapsed ? 'center' : 'flex-start' }}
+              style={{ width: '100%', justifyContent: collapsed ? 'center' : 'flex-start', color: '#8E9DB0' }}
             >
               {collapsed
-                ? <ChevronRight className="nav-item-icon" size={18} />
+                ? <ChevronRight className="nav-item-icon" size={16} />
                 : (
                   <>
-                    <ChevronLeft className="nav-item-icon" size={18} />
-                    <span className="nav-item-label" style={{ color: 'rgba(255,255,255,0.62)', fontSize: 13 }}>Collapse</span>
+                    <ChevronLeft className="nav-item-icon" size={16} />
+                    <span className="nav-item-label" style={{ fontSize: 12 }}>Collapse Sidebar</span>
                   </>
                 )
               }

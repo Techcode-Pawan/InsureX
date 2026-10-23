@@ -15,68 +15,58 @@ import {
   Building2,
   BarChart3,
   Settings,
+  BadgeCheck,
+  KeyRound,
 } from 'lucide-react'
 
 export const navSections = [
   {
     label: 'Overview',
     items: [
-      { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+      { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     ],
   },
   {
     label: 'Core',
     items: [
-      { label: 'Customers', path: '/customers', icon: Users },
-      { label: 'Insurance Policies', path: '/policies', icon: Shield },
-      { label: 'Policy Types', path: '/policy-types', icon: FileText },
-      { label: 'Applications', path: '/applications', icon: FolderOpen },
+      { label: 'Customers', path: '/admin/customers', icon: Users },
+      { label: 'Insurance Policies', path: '/admin/policies', icon: Shield },
+      { label: 'Policy Types', path: '/admin/policy-types', icon: FileText },
+      { label: 'Applications', path: '/admin/applications', icon: FolderOpen },
     ],
   },
   {
     label: 'Finance',
     items: [
-      { label: 'Premiums', path: '/premiums', icon: CreditCard },
-      { label: 'Payments', path: '/payments', icon: Banknote },
+      { label: 'Premiums', path: '/admin/premiums', icon: CreditCard },
+      { label: 'Payments', path: '/admin/payments', icon: Banknote },
+      { label: 'Verification Queue', path: '/admin/verifications', icon: BadgeCheck },
     ],
   },
   {
     label: 'Operations',
     items: [
-      { label: 'Claims', path: '/claims', icon: AlertCircle },
-      { label: 'Claim Processing', path: '/claim-processing', icon: GitPullRequest },
-      { label: 'Agents', path: '/agents', icon: UserCheck, adminOnly: true },
-      { label: 'Beneficiaries', path: '/beneficiaries', icon: Heart },
-      { label: 'Documents', path: '/documents', icon: Archive },
-      { label: 'Renewals', path: '/renewals', icon: RefreshCcw },
+      { label: 'Claims', path: '/admin/claims', icon: AlertCircle },
+      { label: 'Claim Processing', path: '/admin/claim-processing', icon: GitPullRequest },
+      { label: 'Agents', path: '/admin/agents', icon: UserCheck },
+      { label: 'Beneficiaries', path: '/admin/beneficiaries', icon: Heart },
+      { label: 'Documents', path: '/admin/documents', icon: Archive },
+      { label: 'Renewals', path: '/admin/renewals', icon: RefreshCcw },
     ],
   },
   {
     label: 'Management',
     items: [
-      { label: 'Insurance Companies', path: '/insurance-companies', icon: Building2, adminOnly: true },
-      { label: 'Reports', path: '/reports', icon: BarChart3 },
-      { label: 'Settings', path: '/settings', icon: Settings, adminOnly: true },
+      { label: 'Insurance Companies', path: '/admin/insurance-companies', icon: Building2 },
+      { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
+      { label: 'Users & Access', path: '/admin/access', icon: KeyRound },
+      { label: 'Settings', path: '/admin/settings', icon: Settings },
     ],
   },
 ]
 
-/**
- * Filter navigation sections according to user role
- * For AGENT role: hides Admin-only management modules (Agents, Companies, Settings)
- */
-export function getNavSectionsForRole(role) {
-  const isAgent = role === 'AGENT'
+// The admin console is only reachable by ADMIN logins (enforced by the API and the route guard),
+// so every section is shown. Agents and customers have their own layouts and navigation.
+export function getNavSectionsForRole() {
   return navSections
-    .map((section) => {
-      const filteredItems = section.items.filter((item) => {
-        if (isAgent && item.adminOnly) return false
-        return true
-      })
-      return {
-        ...section,
-        items: filteredItems,
-      }
-    })
-    .filter((section) => section.items.length > 0)
 }

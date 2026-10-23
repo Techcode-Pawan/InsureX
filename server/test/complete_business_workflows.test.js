@@ -325,18 +325,21 @@ test('COMPREHENSIVE AUDIT: 5 End-to-End Business Workflows & Financial Calculati
   // TEARDOWN: Clean up all test fixtures cleanly
   // ─────────────────────────────────────────────────────────────
   await t.test('Teardown: Clean up Test Fixtures', async () => {
-    if (testPremium) {
-      await prisma.premiumPayment.deleteMany({ where: { premiumId: testPremium.id } })
-      await prisma.premium.delete({ where: { id: testPremium.id } })
-    }
-    if (testPolicy) {
-      await prisma.insurancePolicy.delete({ where: { id: testPolicy.id } })
-    }
-    if (testApplication) {
-      await prisma.insuranceApplication.delete({ where: { id: testApplication.id } })
-    }
-    if (testCustomer) {
-      await prisma.customer.delete({ where: { id: testCustomer.id } })
-    }
+    if (!testCustomer) return
+    // Remove everything created for the fixture customer, children first (FKs are RESTRICT).
+    const customerId = testCustomer.id
+    const polIds = (await prisma.insurancePolicy.findMany({ where: { customerId }, select: { id: true } })).map((p) => p.id)
+    const claimIds = (await prisma.claim.findMany({ where: { customerId }, select: { id: true } })).map((c) => c.id)
+    await prisma.document.deleteMany({ where: { customerId } })
+    await prisma.claimProcessing.deleteMany({ where: { claimId: { in: claimIds } } })
+    await prisma.claim.deleteMany({ where: { customerId } })
+    await prisma.premiumPayment.deleteMany({ where: { policyId: { in: polIds } } })
+    await prisma.premium.deleteMany({ where: { policyId: { in: polIds } } })
+    await prisma.policyRenewal.deleteMany({ where: { policyId: { in: polIds } } })
+    await prisma.beneficiary.deleteMany({ where: { policyId: { in: polIds } } })
+    await prisma.insurancePolicy.deleteMany({ where: { customerId } })
+    await prisma.insuranceApplication.deleteMany({ where: { customerId } })
+    await prisma.activityLog.deleteMany({ where: { OR: [{ customerId }, { entityId: { in: [...polIds, ...claimIds] } }] } })
+    await prisma.customer.delete({ where: { id: customerId } })
   })
 })

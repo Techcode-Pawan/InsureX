@@ -1,17 +1,28 @@
 import { z } from 'zod'
 
 // ── Auth Schemas ──────────────────────────────────────────────
+const strongPassword = z.string()
+  .min(8, 'Password must be at least 8 characters.')
+  .max(128)
+  .regex(/[A-Za-z]/, 'Password must contain a letter.')
+  .regex(/\d/, 'Password must contain a number.')
+
+// Public registration never accepts a role: unknown keys (including "role") are stripped.
 export const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
-  name: z.string().min(2),
-  role: z.enum(['ADMIN', 'AGENT', 'CUSTOMER']).optional().default('CUSTOMER'),
-  phone: z.string().optional(),
+  email: z.string().trim().email().max(254),
+  password: strongPassword,
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().max(20).optional(),
 })
 
 export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1, 'Password is required.'),
+  email: z.string().trim().email().max(254),
+  password: z.string().min(1, 'Password is required.').max(128),
+})
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(128),
+  newPassword: strongPassword,
 })
 
 // ── Customer Schemas ──────────────────────────────────────────
@@ -191,3 +202,121 @@ export const companySchema = z.object({
   rating: z.string().optional(),
   description: z.string().optional(),
 })
+
+// ── Role-scoped schemas (customer portal / agent workspace / admin) ──
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format must be YYYY-MM-DD')
+
+export const uuidParam = z.object({ id: z.string().uuid('Record not found.') })
+
+// Fields a customer or agent may change on a customer record after creation.
+export const customerContactSchema = z.object({
+  phone: z.string().trim().min(10).max(20),
+  address: z.string().trim().min(1).max(300),
+  city: z.string().trim().min(1).max(80),
+  state: z.string().trim().min(1).max(80),
+  postalCode: z.string().trim().min(4).max(12),
+}).partial().strict()
+
+export const customerProfileSchema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  dateOfBirth: isoDate,
+  gender: z.string().trim().min(1).max(30),
+  phone: z.string().trim().min(10).max(20),
+  address: z.string().trim().min(1).max(300),
+  city: z.string().trim().min(1).max(80),
+  state: z.string().trim().min(1).max(80),
+  postalCode: z.string().trim().min(4).max(12),
+  idProofType: z.string().trim().min(1).max(40),
+  idProofLast4: z.string().trim().regex(/^[A-Za-z0-9]{4}$/, 'Enter only the last 4 characters of your ID.'),
+}).strict()
+
+export const agentCustomerCreateSchema = customerProfileSchema.extend({
+  email: z.string().trim().email().max(254),
+})
+
+export const selfApplicationSchema = z.object({
+  policyTypeId: z.string().uuid(),
+  requestedCoverage: z.number().positive().max(1_000_000_000),
+  annualIncome: z.number().positive().max(10_000_000_000).optional(),
+  employmentStatus: z.string().trim().max(60).optional(),
+  nomineeName: z.string().trim().max(120).optional(),
+  nomineeRelation: z.string().trim().max(60).optional(),
+}).strict()
+
+export const agentApplicationSchema = selfApplicationSchema.extend({
+  customerId: z.string().uuid(),
+  notes: z.string().trim().max(2000).optional(),
+}).strict()
+
+export const selfClaimSchema = z.object({
+  policyId: z.string().uuid(),
+  claimType: z.string().trim().min(2).max(60),
+  claimDate: isoDate,
+  claimedAmount: z.number().positive(),
+  incidentDescription: z.string().trim().min(10, 'Please describe the incident (at least 10 characters).').max(5000),
+}).strict()
+
+export const paymentSubmissionSchema = z.object({
+  premiumId: z.string().uuid(),
+  amount: z.number().positive('Payment amount must be greater than zero.'),
+  paymentMethod: z.enum(['UPI', 'NET_BANKING', 'DEBIT_CARD', 'CREDIT_CARD', 'BANK_TRANSFER', 'CHEQUE']),
+  transactionReference: z.string().trim().min(4, 'Enter the transaction reference / UTR from your bank.').max(64),
+}).strict()
+
+export const paymentVerifySchema = z.object({
+  decision: z.enum(['SUCCESS', 'FAILED']),
+  notes: z.string().trim().max(500).optional(),
+}).strict()
+
+export const renewalRequestSchema = z.object({
+  policyId: z.string().uuid(),
+  notes: z.string().trim().max(1000).optional(),
+}).strict()
+
+export const renewalUpdateSchema = z.object({
+  status: z.enum(['UPCOMING', 'RENEWED', 'OVERDUE', 'GRACE_PERIOD', 'LAPSED']).optional(),
+  paymentMethod: z.string().trim().max(40).optional(),
+  paymentReference: z.string().trim().max(64).optional(),
+  notes: z.string().trim().max(1000).optional(),
+}).strict()
+
+export const documentUploadMetaSchema = z.object({
+  name: z.string().trim().min(2).max(160),
+  documentType: z.string().trim().min(2).max(60),
+  customerId: z.string().uuid().optional(),
+  policyId: z.string().uuid().optional(),
+  claimId: z.string().uuid().optional(),
+})
+
+export const documentReviewSchema = z.object({
+  verificationStatus: z.enum(['PENDING', 'VERIFIED', 'NEEDS_INFO', 'REJECTED']),
+  verificationNotes: z.string().trim().max(1000).optional(),
+}).strict()
+
+export const agentDocumentReviewSchema = z.object({
+  verificationStatus: z.literal('NEEDS_INFO'),
+  verificationNotes: z.string().trim().min(5).max(1000),
+}).strict()
+
+export const assignAgentSchema = z.object({
+  agentId: z.string().uuid().nullable(),
+}).strict()
+
+export const adminCreateUserSchema = z.object({
+  email: z.string().trim().email().max(254),
+  name: z.string().trim().min(2).max(120),
+  password: strongPassword,
+  role: z.enum(['ADMIN', 'AGENT']),
+  agentId: z.string().uuid().optional(),
+}).strict().refine((v) => v.role !== 'AGENT' || v.agentId, { message: 'An agent login must be linked to an agent profile.', path: ['agentId'] })
+
+export const adminResetPasswordSchema = z.object({
+  temporaryPassword: strongPassword,
+}).strict()
+
+export const adminUpdateUserSchema = z.object({
+  isActive: z.boolean().optional(),
+  linkCustomerId: z.string().uuid().nullable().optional(),
+  linkAgentId: z.string().uuid().nullable().optional(),
+}).strict()
