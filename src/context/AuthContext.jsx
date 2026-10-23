@@ -1,8 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { useContext, useState, useEffect, useCallback } from 'react'
 import authService from '../services/authService'
 import api from '../services/apiClient'
-
-const AuthContext = createContext(null)
+import { AuthContext } from './authContextObject'
 
 export const ROLE_HOME = { ADMIN: '/admin', AGENT: '/agent', CUSTOMER: '/user' }
 
