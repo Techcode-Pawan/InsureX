@@ -17,8 +17,9 @@ function fail(msg) {
 
 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail('Set ADMIN_EMAIL to a valid email address.')
 if (name.length < 2) fail('Set ADMIN_NAME.')
-if (password.length < 12 || !/[A-Za-z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
-  fail('ADMIN_PASSWORD must be 12+ characters with a letter, a number and a symbol.')
+// Same rule the API enforces (validators/schemas.js strongPassword), so CLI and app never disagree.
+if (password.length < 8 || password.length > 128 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+  fail('ADMIN_PASSWORD must be 8–128 characters with at least one letter and one number.')
 }
 
 const existing = await prisma.user.findUnique({ where: { email } })

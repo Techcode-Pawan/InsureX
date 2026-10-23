@@ -12,7 +12,8 @@
     "prisma:seed": "node prisma/seed.js",
     "prisma:studio": "prisma studio",
     "test": "node --import ./test/setup.js --test --test-concurrency=1 \"test/*.test.js\"",
-    "create-admin": "node scripts/create-admin.js"
+    "create-admin": "node scripts/create-admin.js",
+    "reset-admin": "node scripts/reset-admin-password.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -22,6 +23,7 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
+    "install": "^0.13.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",

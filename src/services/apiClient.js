@@ -81,11 +81,20 @@ class ApiClient {
   }
 
   // The third argument is accepted for backwards compatibility with existing callers and ignored.
+  // Identical GETs already in flight (same URL and session) share one network request. This stops
+  // React StrictMode's double-mount in development, and components asking for the same data at the
+  // same moment, from doubling database load. Completed responses are never cached.
   get(endpoint, params = {}) {
     const query = new URLSearchParams(
       Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
     ).toString()
-    return this.request(query ? `${endpoint}?${query}` : endpoint, { method: 'GET' })
+    const url = query ? `${endpoint}?${query}` : endpoint
+    const key = `${this.getToken() || ''} ${url}`
+    if (!this.inflight) this.inflight = new Map()
+    if (this.inflight.has(key)) return this.inflight.get(key)
+    const promise = this.request(url, { method: 'GET' }).finally(() => this.inflight.delete(key))
+    this.inflight.set(key, promise)
+    return promise
   }
 
   post(endpoint, body = {}) {
