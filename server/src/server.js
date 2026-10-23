@@ -1,6 +1,7 @@
 import app from './app.js'
 import { env } from './config/env.js'
 import prisma from './config/db.js'
+import { runReminders } from './lib/reminders.js'
 
 const server = app.listen(env.PORT, () => {
   console.log(`====================================================`)
@@ -12,9 +13,22 @@ const server = app.listen(env.PORT, () => {
   console.log(`====================================================`)
 })
 
+// Due-date reminders and overdue status refresh: on start, then every 6 hours.
+async function reminderTick() {
+  try {
+    const n = await runReminders()
+    if (n) console.log(`🔔 Created ${n} due-date reminder notification(s).`)
+  } catch (err) {
+    console.error('Reminder job failed:', err.message)
+  }
+}
+reminderTick()
+const reminderTimer = setInterval(reminderTick, 6 * 60 * 60 * 1000)
+
 // Graceful shutdown handlers
 async function gracefulShutdown(signal) {
   console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`)
+  clearInterval(reminderTimer)
   server.close(async () => {
     try {
       await prisma.$disconnect()

@@ -4,6 +4,23 @@ InsureX is an enterprise-grade Insurance Management System designed for underwri
 
 ---
 
+## Multi-role platform (Admin · Agent · Customer)
+
+| Panel | Route | Who | Scope enforced by the API |
+|---|---|---|---|
+| Operations console | `/admin` | `ADMIN` | System-wide (`/api/*` legacy routes + `/api/admin/*`) |
+| Advisor workspace | `/agent` | `AGENT` linked to an `InsuranceAgent` profile | Customers with `assignedAgentId` = the agent, plus policies/claims/applications linked to the agent (`/api/agent/*`) |
+| Customer portal | `/user` | `CUSTOMER` linked to a `Customer` record | Only the signed-in customer's records (`/api/me/*`) |
+
+* Identity, role and linked profile are resolved from PostgreSQL on every request; nothing role-related is trusted from the client.
+* Tokens carry a `tokenVersion`; logout, password change, admin password reset and deactivation revoke all earlier tokens.
+* Forgotten passwords: no email service is configured, so an admin verifies the person's identity and sets a temporary password (Admin → Users & Access → Reset password).
+* Uploaded documents (PDF/PNG/JPEG, ≤5 MB, content-type checked by file signature) are stored outside public folders and served only through role-scoped download endpoints.
+* Customer payments: no gateway is integrated. Customers submit their bank/UPI reference; payments stay `PENDING` until staff confirm them in **Admin → Verification Queue**, and only then change balances.
+* Notifications and the activity log are generated from real business events.
+
+Backend tests (real database, fictional fixtures cleaned up afterwards): `cd server && npm test`.
+
 ## 1. Technology Stack
 
 - **Frontend:** React 19, Vite, Tailwind CSS v4, React Router v7, Lucide Icons, Recharts, Framer Motion
@@ -123,11 +140,19 @@ npm run prisma:generate
 npx prisma migrate dev --name init
 ```
 
-### Step 4: Seed the Database
-Populate the database with normalized demonstration records:
+### Step 4: Seed the Database (optional, fictional demo data)
+Seeding needs `SEED_DEMO_PASSWORD` in your local environment; no passwords are hardcoded.
 ```bash
 npm run prisma:seed
 ```
+
+### Step 5: Create the first administrator
+There is no public way to create admins. Provision one from the command line:
+```bash
+ADMIN_EMAIL=ops@example.com ADMIN_NAME="Ops Lead" ADMIN_PASSWORD='<12+ chars, letter, number, symbol>' npm run create-admin
+```
+Agents receive logins from an admin (Admin → Users & Access), linked to their agent profile.
+Customers self-register at `/signup`.
 
 ---
 

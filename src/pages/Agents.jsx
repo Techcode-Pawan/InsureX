@@ -1,485 +1,199 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import {
-  UserCheck, Users, Shield, AlertCircle, Plus, Search as SearchIcon,
-  SlidersHorizontal, X, Eye, Edit2, Phone, Mail, Award,
-  ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
-} from 'lucide-react'
-
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { UserPlus, Search } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
-import Card from '../components/ui/Card'
-import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
-import EmptyState from '../components/ui/EmptyState'
+import Input from '../components/ui/Input'
+import Select from '../components/ui/Select'
 import Modal from '../components/ui/Modal'
-import { Toast } from '../components/ui/Toast'
+import { StatusBadge } from '../components/ui/Badge'
+import { Panel, KpiBand, Kpi, DataState, Segmented, Notice, ConfirmDialog } from '../components/panel'
+import { useApi, useAction } from '../lib/useApi'
+import api from '../services/apiClient'
+import { date, fullName } from '../lib/format'
 
-import {
-  initialAgents, AGENT_STATUS, SPECIALIZATIONS, REGIONS,
-  generateAgentId, formatINR,
-} from '../data/agentData'
-import { avatarColor, initials } from '../data/customerData'
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const AGENT_STATUSES = [
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'ON_LEAVE', label: 'On leave' },
+  { value: 'INACTIVE', label: 'Inactive' },
+]
+const EMPTY = { firstName: '', lastName: '', email: '', phone: '', city: '', region: '', licenseNumber: '', specialization: '', companyId: '', status: 'ACTIVE', commissionRate: '8', bio: '' }
 
-// ── Helpers ───────────────────────────────────────────────────
-function SBadge({ status }) {
-  const c = AGENT_STATUS[status] || { label: status, variant: 'gray' }
-  return <Badge variant={c.variant} dot>{c.label}</Badge>
+function fromAgent(a) {
+  if (!a) return EMPTY
+  return {
+    firstName: a.firstName, lastName: a.lastName, email: a.email, phone: a.phone, city: a.city, region: a.region,
+    licenseNumber: a.licenseNumber, specialization: a.specialization, companyId: a.companyId || '', status: a.status,
+    commissionRate: String(Number(a.commissionRate)), bio: a.bio || '',
+  }
 }
 
-function Avatar({ name, size = 32 }) {
-  const p = (name || '').split(' ')
-  return (
-    <div aria-hidden style={{ width: size, height: size, borderRadius: '50%', background: avatarColor(name), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>
-      {initials(p[0] || '', p[1] || '')}
-    </div>
-  )
+// Mirrors server agentSchema.
+function validate(f) {
+  const e = {}
+  if (!f.firstName.trim()) e.firstName = 'Required.'
+  if (!f.lastName.trim()) e.lastName = 'Required.'
+  if (!EMAIL_RE.test(f.email.trim())) e.email = 'Enter a valid email.'
+  if (f.phone.replace(/\D/g, '').length < 10) e.phone = 'At least 10 digits.'
+  if (!f.city.trim()) e.city = 'Required.'
+  if (!f.region.trim()) e.region = 'Required.'
+  if (f.licenseNumber.trim().length < 3) e.licenseNumber = 'At least 3 characters.'
+  if (f.specialization.trim().length < 2) e.specialization = 'Required.'
+  const rate = Number(f.commissionRate)
+  if (Number.isNaN(rate) || rate < 0 || rate > 50) e.commissionRate = 'Between 0 and 50.'
+  return e
 }
 
-function SortIcon({ col, sortKey, sortDir }) {
-  if (col !== sortKey) return <ChevronUp size={12} style={{ color: '#CBD5E1' }} />
-  return sortDir === 'asc' ? <ChevronUp size={12} style={{ color: '#168BFF' }} /> : <ChevronDown size={12} style={{ color: '#168BFF' }} />
-}
-
-function KPICard({ icon: Icon, color, bg, label, value, note }) {
-  return (
-    <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <div>
-          <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-          <p style={{ margin: '0 0 4px', fontSize: 26, fontWeight: 800, color: '#172033' }}>{value}</p>
-          <p style={{ margin: 0, fontSize: 12, color: '#94A3B8' }}>{note}</p>
-        </div>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Icon size={22} style={{ color }} />
-        </div>
-      </div>
-    </Card>
-  )
-}
-
-// ── Add / Edit Agent Modal ────────────────────────────────────
-function AgentFormModal({ open, onClose, onSubmit, initialValues }) {
-  const isEdit = !!initialValues
-  const [fields, setFields] = useState({
-    firstName: '', lastName: '', email: '', phone: '', city: '', region: REGIONS[0],
-    licenseNumber: '', specialization: SPECIALIZATIONS[0], status: 'active',
-    commissionRate: '8.0', bio: '',
-  })
+export function AgentFormModal({ open, agent, onClose, onSaved }) {
+  const isEdit = Boolean(agent)
+  const companies = useApi(open ? '/insurance-companies' : null)
+  const [f, setF] = useState(EMPTY)
   const [errors, setErrors] = useState({})
+  const action = useAction()
 
-  // Update on open / initialValues change
-  useState(() => {
-    if (initialValues) {
-      setFields({
-        firstName: initialValues.firstName || '',
-        lastName: initialValues.lastName || '',
-        email: initialValues.email || '',
-        phone: initialValues.phone || '',
-        city: initialValues.city || '',
-        region: initialValues.region || REGIONS[0],
-        licenseNumber: initialValues.licenseNumber || '',
-        specialization: initialValues.specialization || SPECIALIZATIONS[0],
-        status: initialValues.status || 'active',
-        commissionRate: String(initialValues.commissionRate || '8.0'),
-        bio: initialValues.bio || '',
-      })
-    } else {
-      setFields({
-        firstName: '', lastName: '', email: '', phone: '', city: '', region: REGIONS[0],
-        licenseNumber: `IRDAI-AG-${Math.floor(10000 + Math.random() * 90000)}`,
-        specialization: SPECIALIZATIONS[0], status: 'active',
-        commissionRate: '8.0', bio: '',
-      })
+  useEffect(() => {
+    if (open) { setF(fromAgent(agent)); setErrors({}); action.setError(null) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, agent])
+
+  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }))
+
+  async function submit(e) {
+    e.preventDefault()
+    const errs = validate(f)
+    setErrors(errs)
+    if (Object.keys(errs).length) return
+    const payload = {
+      firstName: f.firstName.trim(), lastName: f.lastName.trim(), email: f.email.trim(), phone: f.phone.trim(),
+      city: f.city.trim(), region: f.region.trim(), licenseNumber: f.licenseNumber.trim(), specialization: f.specialization.trim(),
+      status: f.status, commissionRate: Number(f.commissionRate),
+      ...(f.companyId && { companyId: f.companyId }),
+      ...(f.bio.trim() && { bio: f.bio.trim() }),
     }
-  }, [initialValues, open])
-
-  function set(k, v) {
-    setFields(f => ({ ...f, [k]: v }))
-    if (errors[k]) setErrors(e => { const n = { ...e }; delete n[k]; return n })
-  }
-
-  function handleSubmit() {
-    const e = {}
-    if (!fields.firstName.trim()) e.firstName = 'First name is required.'
-    if (!fields.lastName.trim()) e.lastName = 'Last name is required.'
-    if (!fields.email.trim() || !fields.email.includes('@')) e.email = 'Valid email is required.'
-    if (!fields.phone.trim()) e.phone = 'Phone number is required.'
-    if (!fields.licenseNumber.trim()) e.licenseNumber = 'IRDAI license number is required.'
-    if (!fields.city.trim()) e.city = 'City is required.'
-
-    if (Object.keys(e).length) { setErrors(e); return }
-
-    onSubmit({
-      ...initialValues,
-      agentId: initialValues?.agentId || generateAgentId(),
-      firstName: fields.firstName.trim(),
-      lastName: fields.lastName.trim(),
-      email: fields.email.trim(),
-      phone: fields.phone.trim(),
-      city: fields.city.trim(),
-      region: fields.region,
-      licenseNumber: fields.licenseNumber.trim(),
-      specialization: fields.specialization,
-      status: fields.status,
-      commissionRate: Number(fields.commissionRate) || 8.0,
-      joiningDate: initialValues?.joiningDate || new Date().toISOString().split('T')[0],
-      assignedCustomersCount: initialValues?.assignedCustomersCount ?? 0,
-      assignedPoliciesCount: initialValues?.assignedPoliciesCount ?? 0,
-      assignedClaimsCount: initialValues?.assignedClaimsCount ?? 0,
-      rating: initialValues?.rating ?? 4.8,
-      bio: fields.bio.trim(),
-    })
-    onClose()
+    try {
+      const res = await action.run(() => (isEdit ? api.put(`/agents/${agent.id}`, payload) : api.post('/agents', payload)))
+      onSaved(res.data.data)
+    } catch (err) {
+      if (err.errors) setErrors(Object.fromEntries(err.errors.map((x) => [x.field, x.message])))
+    }
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Edit Agent Profile' : 'Register New Insurance Agent'} size="lg"
-      footer={<>
-        <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
-        <Button variant="primary" size="sm" onClick={handleSubmit}>{isEdit ? 'Save Changes' : 'Register Agent'}</Button>
-      </>}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>First Name *</label>
-          <input className={`input${errors.firstName ? ' error' : ''}`} style={{ height: 38, fontSize: 13 }}
-            value={fields.firstName} onChange={e => set('firstName', e.target.value)} placeholder="e.g. Rahul" />
-          {errors.firstName && <span style={{ fontSize: 12, color: '#EF4444', marginTop: 2, display: 'block' }}>{errors.firstName}</span>}
+    <Modal open={open} onClose={action.pending ? () => {} : onClose} title={isEdit ? `Edit ${agent.agentNumber}` : 'Add agent'} size="lg"
+      footer={<><Button variant="secondary" onClick={onClose} disabled={action.pending}>Cancel</Button><Button type="submit" form="agent-form" loading={action.pending}>{isEdit ? 'Save changes' : 'Add agent'}</Button></>}>
+      <form id="agent-form" className="form-grid" onSubmit={submit} noValidate>
+        {action.error && <div className="span-2"><Notice tone="error">{action.error.message}</Notice></div>}
+        <Input id="af-first" label="First name" value={f.firstName} onChange={set('firstName')} error={errors.firstName} required />
+        <Input id="af-last" label="Last name" value={f.lastName} onChange={set('lastName')} error={errors.lastName} required />
+        <Input id="af-email" label="Work email" type="email" value={f.email} onChange={set('email')} error={errors.email} required />
+        <Input id="af-phone" label="Phone" type="tel" value={f.phone} onChange={set('phone')} error={errors.phone} required />
+        <Input id="af-city" label="City" value={f.city} onChange={set('city')} error={errors.city} required />
+        <Input id="af-region" label="Region" value={f.region} onChange={set('region')} error={errors.region} required />
+        <Input id="af-license" label="Licence number" value={f.licenseNumber} onChange={set('licenseNumber')} error={errors.licenseNumber} required />
+        <Input id="af-spec" label="Specialisation" value={f.specialization} onChange={set('specialization')} error={errors.specialization} placeholder="e.g. Health, Life, Motor" required />
+        <Select id="af-company" label="Insurance company" value={f.companyId} onChange={set('companyId')}
+          options={[{ value: '', label: 'Not tied to a company' }, ...(companies.data || []).map((c) => ({ value: c.id, label: c.name }))]} />
+        <Input id="af-rate" label="Commission rate (%)" type="number" min="0" max="50" step="0.1" value={f.commissionRate} onChange={set('commissionRate')} error={errors.commissionRate} />
+        <Select id="af-status" label="Status" value={f.status} onChange={set('status')} options={AGENT_STATUSES} />
+        <div />
+        <div className="span-2">
+          <label className="input-label" htmlFor="af-bio">Bio (optional)</label>
+          <textarea id="af-bio" className="input" maxLength={2000} value={f.bio} onChange={set('bio')} />
         </div>
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>Last Name *</label>
-          <input className={`input${errors.lastName ? ' error' : ''}`} style={{ height: 38, fontSize: 13 }}
-            value={fields.lastName} onChange={e => set('lastName', e.target.value)} placeholder="e.g. Verma" />
-          {errors.lastName && <span style={{ fontSize: 12, color: '#EF4444', marginTop: 2, display: 'block' }}>{errors.lastName}</span>}
-        </div>
-
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>Email Address *</label>
-          <input type="email" className={`input${errors.email ? ' error' : ''}`} style={{ height: 38, fontSize: 13 }}
-            value={fields.email} onChange={e => set('email', e.target.value)} placeholder="agent@insurex.in" />
-          {errors.email && <span style={{ fontSize: 12, color: '#EF4444', marginTop: 2, display: 'block' }}>{errors.email}</span>}
-        </div>
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>Phone Number *</label>
-          <input className={`input${errors.phone ? ' error' : ''}`} style={{ height: 38, fontSize: 13 }}
-            value={fields.phone} onChange={e => set('phone', e.target.value)} placeholder="+91 98765 00000" />
-          {errors.phone && <span style={{ fontSize: 12, color: '#EF4444', marginTop: 2, display: 'block' }}>{errors.phone}</span>}
-        </div>
-
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>IRDAI License No. *</label>
-          <input className={`input${errors.licenseNumber ? ' error' : ''}`} style={{ height: 38, fontSize: 13 }}
-            value={fields.licenseNumber} onChange={e => set('licenseNumber', e.target.value)} placeholder="IRDAI-AG-XXXXX" />
-          {errors.licenseNumber && <span style={{ fontSize: 12, color: '#EF4444', marginTop: 2, display: 'block' }}>{errors.licenseNumber}</span>}
-        </div>
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>City / Location *</label>
-          <input className={`input${errors.city ? ' error' : ''}`} style={{ height: 38, fontSize: 13 }}
-            value={fields.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Pune" />
-          {errors.city && <span style={{ fontSize: 12, color: '#EF4444', marginTop: 2, display: 'block' }}>{errors.city}</span>}
-        </div>
-
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>Territory / Region</label>
-          <select className="select" style={{ height: 38, fontSize: 13 }}
-            value={fields.region} onChange={e => set('region', e.target.value)}>
-            {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-        </div>
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>Specialization</label>
-          <select className="select" style={{ height: 38, fontSize: 13 }}
-            value={fields.specialization} onChange={e => set('specialization', e.target.value)}>
-            {SPECIALIZATIONS.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>Status</label>
-          <select className="select" style={{ height: 38, fontSize: 13 }}
-            value={fields.status} onChange={e => set('status', e.target.value)}>
-            {Object.entries(AGENT_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>Commission Rate (%)</label>
-          <input type="number" step="0.5" className="input" style={{ height: 38, fontSize: 13 }}
-            value={fields.commissionRate} onChange={e => set('commissionRate', e.target.value)} placeholder="e.g. 8.5" />
-        </div>
-
-        <div style={{ gridColumn: '1/-1' }}>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5 }}>Agent Bio / Experience Summary</label>
-          <textarea className="input" style={{ minHeight: 65, fontSize: 13, padding: '8px 10px', resize: 'vertical' }}
-            value={fields.bio} onChange={e => set('bio', e.target.value)} placeholder="Brief overview of advisory experience, portfolio specialization..." />
-        </div>
-      </div>
+        {isEdit && agent.status !== 'INACTIVE' && f.status === 'INACTIVE' && (
+          <div className="span-2"><Notice tone="warn">Setting this agent to Inactive also disables their login and signs them out. Their assigned customers stay assigned until you reassign them.</Notice></div>
+        )}
+      </form>
     </Modal>
   )
 }
 
-// ════════════════════════════════════════════════════════════════
-const ROWS_OPTIONS = [8, 15, 25]
-
 export default function Agents() {
-  const navigate = useNavigate()
-  const [agentsList, setAgentsList]   = useState(initialAgents)
-  const [search, setSearch]           = useState('')
-  const [statusFilter, setStatusF]    = useState('')
-  const [regionFilter, setRegionF]    = useState('')
-  const [sortKey, setSortKey]         = useState('assignedPoliciesCount')
-  const [sortDir, setSortDir]         = useState('desc')
-  const [page, setPage]               = useState(1)
-  const [rowsPerPage, setRowsPerPage] = useState(8)
-  const [modalOpen, setModalOpen]     = useState(false)
-  const [editingAgent, setEditingAgent] = useState(null)
-  const [toast, setToast]             = useState(null)
+  const [search, setSearch] = useState('')
+  const [query, setQuery] = useState('')
+  const [status, setStatus] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [deactivating, setDeactivating] = useState(null)
+  const [message, setMessage] = useState('')
+  const action = useAction()
 
-  // KPIs
-  const totalAgents   = agentsList.length
-  const activeAgents  = agentsList.filter(a => a.status === 'active').length
-  const onLeaveAgents = agentsList.filter(a => a.status === 'on_leave').length
-  const totalPolicies = agentsList.reduce((acc, a) => acc + (a.assignedPoliciesCount || 0), 0)
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(search.trim()), 300)
+    return () => clearTimeout(t)
+  }, [search])
 
-  // Filtering + Sorting
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    return agentsList.filter(a => {
-      const fullName = `${a.firstName} ${a.lastName}`.toLowerCase()
-      const ms = !q || fullName.includes(q) || a.agentId.toLowerCase().includes(q) || a.licenseNumber.toLowerCase().includes(q) || a.city.toLowerCase().includes(q) || a.specialization.toLowerCase().includes(q)
-      return ms && (!statusFilter || a.status === statusFilter) && (!regionFilter || a.region === regionFilter)
-    }).sort((a, b) => {
-      let av = a[sortKey] ?? '', bv = b[sortKey] ?? ''
-      if (typeof av === 'number') return sortDir === 'asc' ? av - bv : bv - av
-      return sortDir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av))
-    })
-  }, [agentsList, search, statusFilter, regionFilter, sortKey, sortDir])
+  const { data, loading, error, reload } = useApi('/agents', { search: query || undefined, status: status || undefined })
+  const all = useApi('/agents')
+  const counts = (all.data || []).reduce((acc, a) => ({ ...acc, [a.status]: (acc[a.status] || 0) + 1 }), {})
+  const withLogin = (all.data || []).filter((a) => a.userId).length
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage))
-  const safePage   = Math.min(page, totalPages)
-  const pageRows   = filtered.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
-  const hasFilters = search || statusFilter || regionFilter
-
-  function sort(k) {
-    if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    else { setSortKey(k); setSortDir('asc') }
-    setPage(1)
-  }
-
-  function clearFilters() { setSearch(''); setStatusF(''); setRegionF(''); setPage(1) }
-
-  function handleSaveAgent(agentData) {
-    if (editingAgent) {
-      setAgentsList(prev => prev.map(a => a.agentId === agentData.agentId ? agentData : a))
-      setToast({ message: `Agent ${agentData.firstName} ${agentData.lastName} updated.`, type: 'success' })
-    } else {
-      setAgentsList(prev => [agentData, ...prev])
-      setToast({ message: `Agent ${agentData.firstName} ${agentData.lastName} registered successfully.`, type: 'success' })
-    }
+  async function deactivate() {
+    await action.run(() => api.put(`/agents/${deactivating.id}`, { status: 'INACTIVE' }))
+    setMessage(`${fullName(deactivating)} is now inactive and their login has been disabled.`)
+    setDeactivating(null)
+    reload(); all.reload()
   }
 
   return (
     <div>
-      <PageHeader
-        title="Insurance Agents"
-        subtitle="Manage licensed agents, territorial assignments, portfolio counts, and commission rates."
-        actions={
-          <Button variant="primary" size="sm" icon={Plus} onClick={() => { setEditingAgent(null); setModalOpen(true) }}>
-            Add Agent
-          </Button>
-        }
-      />
+      <PageHeader title="Agents" subtitle="Advisor profiles, their book of customers and portal access."
+        actions={<Button icon={UserPlus} onClick={() => setCreating(true)}>Add agent</Button>} />
+      {message && <div style={{ marginBottom: 12 }}><Notice tone="ok">{message}</Notice></div>}
 
-      {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 20 }}>
-        <KPICard icon={UserCheck} color="#168BFF" bg="#EFF6FF" label="Total Agents" value={totalAgents} note="Registered advisors" />
-        <KPICard icon={Users} color="#10B981" bg="#F0FDF4" label="Active Agents" value={activeAgents} note="In active deployment" />
-        <KPICard icon={Award} color="#F59E0B" bg="#FFFBEB" label="On Leave" value={onLeaveAgents} note="Temporary absence" />
-        <KPICard icon={Shield} color="#6366F1" bg="#F5F3FF" label="Portfolio Cover" value={totalPolicies} note="Assigned policies managed" />
-      </div>
+      <KpiBand cols={4}>
+        <Kpi label="Agents on record" value={all.data ? all.data.length : '—'} />
+        <Kpi label="Active" value={all.data ? counts.ACTIVE || 0 : '—'} foot={all.data && `${counts.ON_LEAVE || 0} on leave · ${counts.INACTIVE || 0} inactive`} />
+        <Kpi label="With a login" value={all.data ? withLogin : '—'} foot={all.data && (all.data.length - withLogin ? `${all.data.length - withLogin} without access` : 'All provisioned')} tone={all.data && all.data.length - withLogin ? 'warn' : ''} to="/admin/access" />
+        <Kpi label="Assigned customers" value={all.data ? all.data.reduce((s, a) => s + a._count.assignedCustomers, 0) : '—'} />
+      </KpiBand>
 
-      {/* Toolbar */}
-      <Card style={{ marginBottom: 16, padding: '12px 18px' }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: '1 1 240px' }}>
-            <SearchIcon size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
-            <input
-              className="input input-icon-left"
-              style={{ height: 36, fontSize: 13 }}
-              placeholder="Search name, ID, license no, city..."
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1) }}
-            />
-          </div>
-          <select
-            className="select"
-            style={{ height: 36, fontSize: 12.5, minWidth: 140 }}
-            value={statusFilter}
-            onChange={e => { setStatusF(e.target.value); setPage(1) }}
-          >
-            <option value="">All Statuses</option>
-            {Object.entries(AGENT_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-          </select>
-          <select
-            className="select"
-            style={{ height: 36, fontSize: 12.5, minWidth: 160 }}
-            value={regionFilter}
-            onChange={e => { setRegionF(e.target.value); setPage(1) }}
-          >
-            <option value="">All Regions</option>
-            {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-          {hasFilters && <Button variant="ghost" size="sm" icon={X} onClick={clearFilters}>Clear</Button>}
+      <Panel flush>
+        <div className="filters">
+          <Input id="agent-filter" prefixIcon={Search} placeholder="Name, agent no., licence, city" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search agents" />
+          <Segmented label="Filter by status" value={status} onChange={setStatus} options={[{ value: '', label: 'All' }, ...AGENT_STATUSES]} />
         </div>
-      </Card>
-
-      {/* Table */}
-      <Card>
-        {filtered.length === 0 ? (
-          <EmptyState
-            title="No agents found"
-            description={hasFilters ? 'No agents match your current search/filters.' : 'No agents currently registered.'}
-            action={hasFilters ? <Button variant="secondary" size="sm" onClick={clearFilters}>Clear Filters</Button> : undefined}
-          />
-        ) : (
-          <>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Agent</th>
-                    <th onClick={() => sort('licenseNumber')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        License <SortIcon col="licenseNumber" sortKey={sortKey} sortDir={sortDir} />
-                      </span>
-                    </th>
-                    <th>Contact Details</th>
-                    <th>Specialization / Region</th>
-                    <th onClick={() => sort('assignedCustomersCount')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        Customers <SortIcon col="assignedCustomersCount" sortKey={sortKey} sortDir={sortDir} />
-                      </span>
-                    </th>
-                    <th onClick={() => sort('assignedPoliciesCount')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        Policies <SortIcon col="assignedPoliciesCount" sortKey={sortKey} sortDir={sortDir} />
-                      </span>
-                    </th>
-                    <th onClick={() => sort('assignedClaimsCount')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        Claims <SortIcon col="assignedClaimsCount" sortKey={sortKey} sortDir={sortDir} />
-                      </span>
-                    </th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
+        <DataState loading={loading} error={error} onRetry={reload} empty={data?.length === 0} emptyText="No agents match.">
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Agent</th><th scope="col">Region</th><th scope="col">Company</th><th scope="col">Specialisation</th>
+                  <th scope="col" className="numeric">Customers</th><th scope="col" className="numeric">Policies</th><th scope="col" className="numeric">Claims</th>
+                  <th scope="col">Login</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data?.map((a) => (
+                  <tr key={a.id}>
+                    <td><Link to={`/admin/agents/${a.id}`} className="table-link" style={{ fontWeight: 600 }}>{fullName(a)}</Link><div className="mono">{a.agentNumber}</div></td>
+                    <td>{a.region}<div className="muted" style={{ fontSize: 12 }}>{a.city}</div></td>
+                    <td>{a.company?.name || <span className="muted">—</span>}</td>
+                    <td>{a.specialization}</td>
+                    <td className="numeric">{a._count.assignedCustomers}</td>
+                    <td className="numeric">{a._count.policies}</td>
+                    <td className="numeric">{a._count.claims}</td>
+                    <td>{a.userId ? 'Yes' : <span style={{ color: 'var(--status-amber-text)', fontSize: 12.5 }}>None</span>}</td>
+                    <td><StatusBadge status={a.status} /><div className="muted" style={{ fontSize: 12 }}>since {date(a.joiningDate)}</div></td>
+                    <td style={{ textAlign: 'right' }}>
+                      {a.status !== 'INACTIVE' && <Button size="sm" variant="ghost" style={{ color: '#B91C1C' }} onClick={() => setDeactivating(a)}>Deactivate</Button>}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {pageRows.map(a => {
-                    const fullName = `${a.firstName} ${a.lastName}`
-                    return (
-                      <tr key={a.agentId} style={{ cursor: 'pointer' }} onClick={() => navigate(`/agents/${a.agentId}`)}>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <Avatar name={fullName} size={34} />
-                            <div>
-                              <p style={{ margin: 0, fontWeight: 600, fontSize: 13.5, color: '#172033' }}>{fullName}</p>
-                              <span style={{ fontSize: 11.5, color: '#168BFF', fontFamily: 'monospace', fontWeight: 600 }}>{a.agentId}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span style={{ fontFamily: 'monospace', fontSize: 12, background: '#F1F5F9', padding: '2px 6px', borderRadius: 4 }}>
-                            {a.licenseNumber}
-                          </span>
-                        </td>
-                        <td>
-                          <div style={{ fontSize: 12.5, color: '#475569' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                              <Mail size={12} style={{ color: '#94A3B8' }} /> {a.email}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                              <Phone size={12} style={{ color: '#94A3B8' }} /> {a.phone}
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: '#172033' }}>{a.specialization}</p>
-                          <p style={{ margin: '2px 0 0', fontSize: 11.5, color: '#64748B' }}>{a.city} • {a.region}</p>
-                        </td>
-                        <td style={{ textAlign: 'center', fontWeight: 700, fontSize: 13 }}>
-                          {a.assignedCustomersCount}
-                        </td>
-                        <td style={{ textAlign: 'center', fontWeight: 700, fontSize: 13, color: '#168BFF' }}>
-                          {a.assignedPoliciesCount}
-                        </td>
-                        <td style={{ textAlign: 'center', fontWeight: 700, fontSize: 13, color: a.assignedClaimsCount > 0 ? '#F59E0B' : '#64748B' }}>
-                          {a.assignedClaimsCount}
-                        </td>
-                        <td>
-                          <SBadge status={a.status} />
-                        </td>
-                        <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                          <div style={{ display: 'inline-flex', gap: 4 }}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              icon={Eye}
-                              onClick={() => navigate(`/agents/${a.agentId}`)}
-                              aria-label="View Details"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              icon={Edit2}
-                              onClick={() => { setEditingAgent(a); setModalOpen(true) }}
-                              aria-label="Edit Agent"
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #EDF2F7', flexWrap: 'wrap', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#64748B' }}>
-                Rows:
-                <select className="select" style={{ height: 28, fontSize: 12, minWidth: 52 }}
-                  value={rowsPerPage} onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}>
-                  {ROWS_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-                <span>Showing {(safePage - 1) * rowsPerPage + 1}–{Math.min(safePage * rowsPerPage, filtered.length)} of {filtered.length}</span>
-              </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <Button variant="ghost" size="sm" icon={ChevronLeft} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage <= 1} aria-label="Previous" />
-                {Array.from({ length: totalPages }, (_, i) => i + 1).slice(Math.max(0, safePage - 3), safePage + 2).map(n => (
-                  <button key={n} onClick={() => setPage(n)}
-                    className={`btn btn-ghost btn-sm${n === safePage ? ' active' : ''}`}
-                    style={{ minWidth: 30, fontWeight: n === safePage ? 700 : 400, color: n === safePage ? '#168BFF' : '#64748B', background: n === safePage ? '#EFF6FF' : undefined, borderRadius: 6 }}>
-                    {n}
-                  </button>
                 ))}
-                <Button variant="ghost" size="sm" icon={ChevronRight} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages} aria-label="Next" />
-              </div>
-            </div>
-          </>
-        )}
-      </Card>
+              </tbody>
+            </table>
+          </div>
+        </DataState>
+      </Panel>
 
-      {/* Add / Edit Modal */}
-      {modalOpen && (
-        <AgentFormModal
-          open={modalOpen}
-          onClose={() => { setModalOpen(false); setEditingAgent(null) }}
-          onSubmit={handleSaveAgent}
-          initialValues={editingAgent}
-        />
-      )}
-
-      {/* Toast */}
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <AgentFormModal open={creating} agent={null} onClose={() => setCreating(false)}
+        onSaved={(a) => { setCreating(false); setMessage(`${fullName(a)} added as ${a.agentNumber}. Create a login for them under Users & Access.`); reload(); all.reload() }} />
+      <ConfirmDialog open={Boolean(deactivating)} title={`Deactivate ${deactivating ? fullName(deactivating) : ''}?`} confirmLabel="Deactivate" danger
+        pending={action.pending} error={action.error} onClose={() => { setDeactivating(null); action.setError(null) }} onConfirm={deactivate}>
+        Their login will be disabled and any active sessions ended. {deactivating?._count.assignedCustomers
+          ? <strong>{deactivating._count.assignedCustomers} assigned customer(s) will remain assigned to them until you reassign them.</strong>
+          : 'They have no assigned customers.'} Records they handled are kept.
+      </ConfirmDialog>
     </div>
   )
 }

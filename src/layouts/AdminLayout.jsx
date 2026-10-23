@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from '../components/layout/Sidebar'
 import Topbar from '../components/layout/Topbar'
@@ -63,7 +63,7 @@ export default function AdminLayout() {
         />
 
         <main className="main-content" id="main-content" tabIndex={-1}>
-          <Outlet />
+          <Suspense fallback={<div className="skel" style={{ height: 160, margin: 8 }} aria-busy="true" />}><Outlet /></Suspense>
         </main>
       </div>
     </div>

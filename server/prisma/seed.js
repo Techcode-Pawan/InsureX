@@ -12,44 +12,22 @@ async function main() {
   console.log('🌱 Starting InsureX Database Seeding...')
 
   // 1. Seed Users
+  // FICTIONAL DEVELOPMENT DATA. No passwords are hardcoded: set SEED_DEMO_PASSWORD in your local
+  // environment to create demo logins. Existing users are never modified (update: {}).
   console.log('1. Seeding Users...')
-  const passwordHash = await bcrypt.hash('Password123!', 10)
-  const adminGmailHash = await bcrypt.hash('Admin@123', 10)
-  const agentGmailHash = await bcrypt.hash('Agent@123', 10)
+  const demoPassword = process.env.SEED_DEMO_PASSWORD
+  if (!demoPassword || demoPassword.length < 10) {
+    throw new Error('Set SEED_DEMO_PASSWORD (10+ characters) to seed demo logins. Never use this in production.')
+  }
+  const passwordHash = await bcrypt.hash(demoPassword, 12)
 
-  const adminGmail = await prisma.user.upsert({
-    where: { email: 'admin@gmail.com' },
-    update: { passwordHash: adminGmailHash, role: 'ADMIN', name: 'Executive Administrator' },
-    create: {
-      email: 'admin@gmail.com',
-      passwordHash: adminGmailHash,
-      name: 'Executive Administrator',
-      role: 'ADMIN',
-      phone: '+91 98200 45678',
-      isActive: true,
-    },
-  })
-
-  const agentGmail = await prisma.user.upsert({
-    where: { email: 'agent@gmail.com' },
-    update: { passwordHash: agentGmailHash, role: 'AGENT', name: 'Rajesh Kapoor (Agent)' },
-    create: {
-      email: 'agent@gmail.com',
-      passwordHash: agentGmailHash,
-      name: 'Rajesh Kapoor (Agent)',
-      role: 'AGENT',
-      phone: '+91 98201 11223',
-      isActive: true,
-    },
-  })
-
-  const adminUser = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'admin@insurex.in' },
     update: {},
     create: {
       email: 'admin@insurex.in',
       passwordHash,
-      name: 'Siddharth Rao',
+      name: 'Siddharth Rao (Demo Admin)',
       role: 'ADMIN',
       phone: '+91 98200 45678',
       isActive: true,

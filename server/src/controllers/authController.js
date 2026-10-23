@@ -5,7 +5,7 @@ export async function register(req, res, next) {
     const result = await authService.registerUser(req.body)
     res.status(201).json({
       success: true,
-      message: 'User registered successfully.',
+      message: 'Account created successfully.',
       data: result,
     })
   } catch (err) {
@@ -33,6 +33,24 @@ export async function getMe(req, res, next) {
       success: true,
       data: user,
     })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function logout(req, res, next) {
+  try {
+    await authService.revokeSessions(req.user.id)
+    res.json({ success: true, message: 'Signed out.' })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function changePassword(req, res, next) {
+  try {
+    const result = await authService.changePassword(req.user.id, req.body)
+    res.json({ success: true, message: 'Password updated. Other sessions have been signed out.', data: result })
   } catch (err) {
     next(err)
   }

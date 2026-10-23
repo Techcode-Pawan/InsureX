@@ -7,16 +7,17 @@ import {
   claimApproveSchema,
   claimRejectSchema,
   claimSettleSchema,
+  uuidParam,
 } from '../validators/schemas.js'
 
 const router = Router()
 
 router.get('/', claimController.getClaims)
-router.get('/:id', claimController.getClaimById)
+router.get('/:id', validate({ params: uuidParam }), claimController.getClaimById)
 router.post('/', validate({ body: claimSchema }), claimController.createClaim)
-router.post('/:id/assign', validate({ body: claimAssignSchema }), claimController.assignClaim)
-router.post('/:id/approve', validate({ body: claimApproveSchema }), claimController.approveClaim)
-router.post('/:id/reject', validate({ body: claimRejectSchema }), claimController.rejectClaim)
-router.post('/:id/settle', validate({ body: claimSettleSchema }), claimController.settleClaim)
+router.post('/:id/assign', validate({ params: uuidParam, body: claimAssignSchema }), claimController.assignClaim)
+router.post('/:id/approve', validate({ params: uuidParam, body: claimApproveSchema }), claimController.approveClaim)
+router.post('/:id/reject', validate({ params: uuidParam, body: claimRejectSchema }), claimController.rejectClaim)
+router.post('/:id/settle', validate({ params: uuidParam, body: claimSettleSchema }), claimController.settleClaim)
 
 export default router

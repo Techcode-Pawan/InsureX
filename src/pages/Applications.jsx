@@ -1,354 +1,247 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import {
-  FileStack, Clock, CheckCircle2, XCircle,
-  Search, SlidersHorizontal, X, Plus, Download,
-  ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
-  Eye, Shield, MoreVertical,
-} from 'lucide-react'
-
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Search, CheckCircle2, XCircle, RotateCw } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
-import Card, { CardHeader } from '../components/ui/Card'
-import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
-import EmptyState from '../components/ui/EmptyState'
+import Input from '../components/ui/Input'
+import Select from '../components/ui/Select'
 import Modal from '../components/ui/Modal'
-import { Toast } from '../components/ui/Toast'
+import { StatusBadge } from '../components/ui/Badge'
+import { Panel, KpiBand, Kpi, Facts, Notice, DataState, Pager, Segmented } from '../components/panel'
+import { useApi, useAction } from '../lib/useApi'
+import api from '../services/apiClient'
+import { inr, date, relativeDays, fullName, titleCase } from '../lib/format'
 
-import {
-  initialApplications, APPLICATION_STATUS, formatINR,
-  getAppDocuments, DOC_STATUS,
-} from '../data/applicationData'
-import { initialPolicyTypes } from '../data/policyData'
-import { avatarColor, initials } from '../data/customerData'
+const PER_YEAR = { MONTHLY: 12, QUARTERLY: 4, HALF_YEARLY: 2, ANNUALLY: 1 }
+const FREQUENCIES = Object.keys(PER_YEAR).map((v) => ({ value: v, label: titleCase(v) }))
+const STATUS_FILTERS = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'APPROVED', label: 'Approved' },
+  { value: 'REJECTED', label: 'Rejected' },
+  { value: 'CANCELLED', label: 'Withdrawn' },
+  { value: '', label: 'All' },
+]
 
-function SBadge({ status, map }) {
-  const c = map[status] || { label: status, variant: 'gray' }
-  return <Badge variant={c.variant} dot>{c.label}</Badge>
+const today = () => new Date().toISOString().slice(0, 10)
+function plusYear(iso) {
+  const d = new Date(iso)
+  d.setFullYear(d.getFullYear() + 1)
+  return d.toISOString().slice(0, 10)
 }
-function Avatar({ name, size = 30 }) {
-  const p = name.split(' ')
-  return (
-    <div aria-hidden style={{ width: size, height: size, borderRadius: '50%', background: avatarColor(name), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: size * 0.38, flexShrink: 0 }}>
-      {initials(p[0]||'', p[1]||'')}
-    </div>
-  )
-}
-function SortIcon({ col, sortKey, sortDir }) {
-  if (col !== sortKey) return <ChevronUp size={12} style={{ color: '#CBD5E1' }} />
-  return sortDir === 'asc' ? <ChevronUp size={12} style={{ color: '#168BFF' }} /> : <ChevronDown size={12} style={{ color: '#168BFF' }} />
-}
-function KPICard({ icon: Icon, color, bg, label, value, note }) {
-  return (
-    <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <div>
-          <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-          <p style={{ margin: '0 0 4px', fontSize: 26, fontWeight: 800, color: '#172033' }}>{value}</p>
-          <p style={{ margin: 0, fontSize: 12, color: '#94A3B8' }}>{note}</p>
-        </div>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon size={22} style={{ color }} /></div>
-      </div>
-    </Card>
-  )
-}
+// Default underwriting rule mirrored from the server: 1.5% of cover per year, split by billing frequency.
+const defaultInstallment = (cover, freq) => Math.round(((Number(cover) * 0.015) / PER_YEAR[freq]) * 100) / 100
 
-// ── Detail Modal ────────────────────────────────────────────
-function AppDetailModal({ open, onClose, app, onStatusChange }) {
-  const [confirmAction, setConfirmAction] = useState(null)
-  const [rejectReason, setRejectReason] = useState('Incomplete documentation or failed underwriting criteria.')
+function ApproveModal({ app, onClose, onDone }) {
+  const companies = useApi(app ? '/insurance-companies' : null)
+  const agents = useApi(app ? '/agents' : null, { status: 'ACTIVE' })
+  const [form, setForm] = useState(null)
+  const action = useAction()
 
   useEffect(() => {
-    if (app) {
-      setConfirmAction(null)
-      setRejectReason('Incomplete documentation or failed underwriting criteria.')
-    }
+    if (!app) return
+    const start = today()
+    setForm({
+      premiumFrequency: 'ANNUALLY',
+      premiumAmount: String(defaultInstallment(app.requestedCoverage, 'ANNUALLY')),
+      startDate: start,
+      expiryDate: plusYear(start),
+      companyId: '',
+      agentId: app.assistedByAgent?.id || '',
+      notes: '',
+    })
+    action.setError(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app])
 
-  if (!app) return null
-  const docs = getAppDocuments(app.applicationId)
+  if (!app || !form) return null
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const installments = PER_YEAR[form.premiumFrequency]
+  const annual = Number(form.premiumAmount || 0) * installments
+  const invalid = !(Number(form.premiumAmount) > 0) || form.expiryDate <= form.startDate
 
-  function confirm(action) { setConfirmAction(action) }
-  function doAction() {
-    if (confirmAction) onStatusChange(app.applicationId, confirmAction, rejectReason)
-    setConfirmAction(null)
-    onClose()
+  async function approve() {
+    const payload = {
+      premiumFrequency: form.premiumFrequency,
+      premiumAmount: Number(form.premiumAmount),
+      startDate: form.startDate,
+      expiryDate: form.expiryDate,
+      ...(form.companyId && { companyId: form.companyId }),
+      ...(form.agentId && { agentId: form.agentId }),
+      ...(form.notes.trim() && { notes: form.notes.trim() }),
+    }
+    const res = await action.run(() => api.post(`/applications/${app.id}/approve`, payload))
+    const { policy, premiumsScheduled } = res.data.data
+    onDone(`Approved ${app.applicationNumber}. Policy ${policy.policyNumber} issued with ${premiumsScheduled} premium installment${premiumsScheduled === 1 ? '' : 's'} scheduled.`)
   }
 
   return (
-    <Modal open={open} onClose={() => { setConfirmAction(null); onClose() }} title="Application Details" size="lg"
-      footer={
-        <div style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          {app.status === 'pending' && (
-            <>
-              <Button variant="primary" size="sm" icon={CheckCircle2} onClick={() => confirm('approved')}>Approve</Button>
-              <Button variant="danger" size="sm" icon={XCircle} onClick={() => confirm('rejected')}>Reject</Button>
-            </>
-          )}
-          {app.status === 'approved' && !app.policyCreated && (
-            <Button variant="primary" size="sm" icon={Shield} onClick={() => confirm('create_policy')}>Create Policy</Button>
-          )}
-          <Button variant="secondary" size="sm" onClick={onClose}>Close</Button>
-        </div>
-      }>
-
-      {/* Confirmation dialog */}
-      {confirmAction && (
-        <div style={{ marginBottom: 16, padding: 14, background: confirmAction === 'rejected' ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${confirmAction === 'rejected' ? '#FECACA' : '#FDE68A'}`, borderRadius: 10 }}>
-          <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: confirmAction === 'rejected' ? '#991B1B' : '#92400E' }}>
-            {confirmAction === 'create_policy' ? 'Create a policy for this approved application?' : confirmAction === 'approved' ? 'Are you sure you want to approve this application?' : 'Please provide the rejection reason:'}
-          </p>
-          {confirmAction === 'rejected' && (
-            <div style={{ marginBottom: 10 }}>
-              <input
-                className="input"
-                style={{ width: '100%', fontSize: 13, height: 36, padding: '0 10px' }}
-                placeholder="Reason for rejection..."
-                value={rejectReason}
-                onChange={e => setRejectReason(e.target.value)}
-              />
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <Button variant={confirmAction === 'rejected' ? 'danger' : 'primary'} size="sm" onClick={doAction}>Confirm</Button>
-            <Button variant="ghost" size="sm" onClick={() => setConfirmAction(null)}>Cancel</Button>
+    <Modal open onClose={action.pending ? () => {} : onClose} title={`Approve ${app.applicationNumber}`} size="lg" footer={
+      <>
+        <Button variant="secondary" onClick={onClose} disabled={action.pending}>Cancel</Button>
+        <Button icon={CheckCircle2} onClick={approve} loading={action.pending} disabled={invalid}>Approve & issue policy</Button>
+      </>
+    }>
+      <div style={{ display: 'grid', gap: 16 }}>
+        <Facts items={[
+          ['Applicant', `${fullName(app.customer)} (${app.customer.customerNumber})`],
+          ['Plan', app.policyType.name],
+          ['Requested cover', inr(app.requestedCoverage)],
+          ['Annual income', app.annualIncome ? inr(app.annualIncome) : '—'],
+          ['Employment', app.employmentStatus || '—'],
+          ['Nominee', app.nomineeName ? `${app.nomineeName}${app.nomineeRelation ? ` (${app.nomineeRelation})` : ''}` : '—'],
+        ]} />
+        <div className="form-grid">
+          <Select id="ap-freq" label="Billing frequency" value={form.premiumFrequency} options={FREQUENCIES}
+            onChange={(e) => setForm((f) => ({ ...f, premiumFrequency: e.target.value, premiumAmount: String(defaultInstallment(app.requestedCoverage, e.target.value)) }))} />
+          <Input id="ap-amount" label="Premium per installment (₹)" type="number" min="1" step="0.01" value={form.premiumAmount} onChange={set('premiumAmount')}
+            hint={`${installments} installment${installments === 1 ? '' : 's'} a year · ${inr(annual)} annually. Default: 1.5% of cover per year.`} />
+          <Input id="ap-start" label="Policy start" type="date" value={form.startDate} onChange={set('startDate')} />
+          <Input id="ap-exp" label="Policy expiry" type="date" value={form.expiryDate} onChange={set('expiryDate')} error={form.expiryDate <= form.startDate ? 'Expiry must be after start.' : undefined} />
+          <Select id="ap-company" label="Insurer (optional)" value={form.companyId} onChange={set('companyId')}
+            options={[{ value: '', label: 'Not assigned' }, ...(companies.data || []).map((c) => ({ value: c.id, label: c.name }))]} />
+          <Select id="ap-agent" label="Servicing agent" value={form.agentId} onChange={set('agentId')}
+            hint={app.assistedByAgent ? 'Defaults to the agent who assisted this application.' : 'If left empty, the customer\'s assigned agent is used.'}
+            options={[{ value: '', label: 'Use customer\'s assigned agent' }, ...(agents.data || []).map((a) => ({ value: a.id, label: `${fullName(a)} (${a.agentNumber})` }))]} />
+          <div className="span-2">
+            <label className="input-label" htmlFor="ap-notes">Underwriting note (internal)</label>
+            <textarea id="ap-notes" className="input" maxLength={2000} value={form.notes} onChange={set('notes')} />
           </div>
         </div>
-      )}
-
-      {/* Rejection Notice if already rejected */}
-      {app.status === 'rejected' && (app.rejectionReason || app.reviewHistory.find(r => r.action === 'Rejected')?.note) && (
-        <div style={{ marginBottom: 16, padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8 }}>
-          <p style={{ margin: 0, fontSize: 11.5, fontWeight: 700, color: '#DC2626', textTransform: 'uppercase' }}>Rejection Reason</p>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#991B1B', fontWeight: 500 }}>
-            {app.rejectionReason || app.reviewHistory.find(r => r.action === 'Rejected')?.note}
-          </p>
-        </div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }} className="details-grid">
-        <div>
-          <p style={{ margin: 0, fontSize: 11.5, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' }}>Application ID</p>
-          <p style={{ margin: '2px 0', fontFamily: 'monospace', fontSize: 14, fontWeight: 700, color: '#168BFF' }}>{app.applicationId}</p>
-        </div>
-        <div>
-          <p style={{ margin: 0, fontSize: 11.5, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' }}>Status</p>
-          <div style={{ marginTop: 2 }}><SBadge status={app.status} map={APPLICATION_STATUS} /></div>
-        </div>
-        <div>
-          <p style={{ margin: 0, fontSize: 11.5, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' }}>Customer</p>
-          <p style={{ margin: '2px 0', fontSize: 14, fontWeight: 600 }}>{app.customerName}</p>
-        </div>
-        <div>
-          <p style={{ margin: 0, fontSize: 11.5, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' }}>Policy Type</p>
-          <p style={{ margin: '2px 0', fontSize: 14 }}>{app.policyType}</p>
-        </div>
-        <div>
-          <p style={{ margin: 0, fontSize: 11.5, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' }}>Requested Coverage</p>
-          <p style={{ margin: '2px 0', fontSize: 14, fontWeight: 700 }}>{formatINR(app.requestedCoverage)}</p>
-        </div>
-        <div>
-          <p style={{ margin: 0, fontSize: 11.5, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' }}>Date Applied</p>
-          <p style={{ margin: '2px 0', fontSize: 14 }}>{app.applicationDate}</p>
-        </div>
+        <Notice>Approval issues the policy and creates its full premium schedule in one transaction. An application can only ever produce one policy.</Notice>
+        {action.error && <Notice tone="error">{action.error.message}</Notice>}
       </div>
-
-      {/* Documents */}
-      {docs.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <h4 style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: '#168BFF', textTransform: 'uppercase' }}>Associated Documents</h4>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {docs.map(d => (
-              <span key={d.docId} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, padding: '5px 10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8 }}>
-                {d.type} <SBadge status={d.status} map={DOC_STATUS} />
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Review history */}
-      {app.reviewHistory.length > 0 && (
-        <div>
-          <h4 style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: '#168BFF', textTransform: 'uppercase' }}>Review History</h4>
-          {app.reviewHistory.map((r, i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: '1px solid #F8FAFC' }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#168BFF', marginTop: 6, flexShrink: 0 }} />
-              <div>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#172033' }}>{r.action}</p>
-                <p style={{ margin: '2px 0', fontSize: 12.5, color: '#64748B' }}>{r.note}</p>
-                <p style={{ margin: 0, fontSize: 11.5, color: '#94A3B8' }}>{r.date} · {r.reviewer}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {app.policyCreated && (
-        <p style={{ marginTop: 12, fontSize: 12.5, color: '#10B981', fontWeight: 600 }}>✓ Policy has been created for this application.</p>
-      )}
     </Modal>
   )
 }
 
-// ════════════════════════════════════════════════════════════
-const ROWS_OPTIONS = [8, 15, 25]
-const COLS = [
-  { key: 'applicationId',    label: 'Application ID',    sortable: true },
-  { key: 'customerName',     label: 'Customer',          sortable: true },
-  { key: 'policyType',       label: 'Policy Type',       sortable: true },
-  { key: 'requestedCoverage',label: 'Requested Coverage',sortable: true },
-  { key: 'applicationDate',  label: 'Applied On',        sortable: true },
-  { key: 'status',           label: 'Status',            sortable: true },
-  { key: 'actions',          label: 'Actions',           sortable: false },
-]
+function RejectModal({ app, onClose, onDone }) {
+  const [reason, setReason] = useState('')
+  const action = useAction()
+  if (!app) return null
+  const tooShort = reason.trim().length < 5
+
+  async function reject() {
+    await action.run(() => api.post(`/applications/${app.id}/reject`, { rejectionReason: reason.trim() }))
+    onDone(`Rejected ${app.applicationNumber}. The customer has been notified with your reason.`)
+  }
+
+  return (
+    <Modal open onClose={action.pending ? () => {} : onClose} title={`Reject ${app.applicationNumber}?`} size="sm" footer={
+      <>
+        <Button variant="secondary" onClick={onClose} disabled={action.pending}>Cancel</Button>
+        <Button variant="danger" icon={XCircle} onClick={reject} loading={action.pending} disabled={tooShort}>Reject application</Button>
+      </>
+    }>
+      <p className="muted" style={{ marginTop: 0, fontSize: 13.5 }}>
+        {fullName(app.customer)} · {app.policyType.name} · {inr(app.requestedCoverage)}. This decision is final and the reason is shown to the customer.
+      </p>
+      <label className="input-label" htmlFor="rj-reason">Reason for rejection</label>
+      <textarea id="rj-reason" className="input" value={reason} maxLength={2000} onChange={(e) => setReason(e.target.value)} aria-invalid={tooShort} />
+      <p className="field-help">At least 5 characters.</p>
+      {action.error && <Notice tone="error">{action.error.message}</Notice>}
+    </Modal>
+  )
+}
 
 export default function Applications() {
-  const navigate = useNavigate()
-  const [apps, setApps]             = useState(initialApplications)
-  const [search, setSearch]         = useState('')
-  const [statusFilter, setStatus]   = useState('')
-  const [typeFilter, setType]       = useState('')
-  const [sortKey, setSortKey]       = useState('applicationDate')
-  const [sortDir, setSortDir]       = useState('desc')
-  const [page, setPage]             = useState(1)
-  const [rowsPerPage, setRows]      = useState(8)
-  const [viewApp, setViewApp]       = useState(null)
-  const [toast, setToast]           = useState(null)
+  const [status, setStatus] = useState('PENDING')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const params = useMemo(() => ({ status, search: search.trim() || undefined, page, limit: 15 }), [status, search, page])
+  const { data, body, loading, error, reload } = useApi('/applications', params)
+  const counts = {
+    PENDING: useApi('/applications', { status: 'PENDING', limit: 1 }),
+    APPROVED: useApi('/applications', { status: 'APPROVED', limit: 1 }),
+    REJECTED: useApi('/applications', { status: 'REJECTED', limit: 1 }),
+  }
+  const [approving, setApproving] = useState(null)
+  const [rejecting, setRejecting] = useState(null)
+  const [message, setMessage] = useState('')
 
-  const total    = apps.length
-  const pending  = apps.filter(a => a.status === 'pending').length
-  const approved = apps.filter(a => a.status === 'approved').length
-  const rejected = apps.filter(a => a.status === 'rejected').length
+  // Approve needs full applicant detail (income, nominee) that the list omits.
+  async function openApprove(row) {
+    const res = await api.get(`/applications/${row.id}`)
+    setApproving(res.data.data)
+  }
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    return apps.filter(a => {
-      const ms = !q || a.applicationId.toLowerCase().includes(q) || a.customerName.toLowerCase().includes(q) || a.policyType.toLowerCase().includes(q)
-      return ms && (!statusFilter || a.status === statusFilter) && (!typeFilter || a.policyTypeId === typeFilter)
-    }).sort((a, b) => {
-      let av = a[sortKey] ?? '', bv = b[sortKey] ?? ''
-      if (typeof av === 'number') return sortDir === 'asc' ? av - bv : bv - av
-      return sortDir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av))
-    })
-  }, [apps, search, statusFilter, typeFilter, sortKey, sortDir])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage))
-  const safePage   = Math.min(page, totalPages)
-  const pageRows   = filtered.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
-  const hasFilters = search || statusFilter || typeFilter
-
-  function sort(k) { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('asc') }; setPage(1) }
-  function clearFilters() { setSearch(''); setStatus(''); setType(''); setPage(1) }
-
-  function handleStatusChange(appId, action, reason) {
-    setApps(prev => prev.map(a => {
-      if (a.applicationId !== appId) return a
-      if (action === 'create_policy') {
-        if (a.policyCreated) { setToast({ message: 'Policy already created for this application.', type: 'error' }); return a }
-        setToast({ message: `Demo policy creation triggered for ${a.applicationId}. In production this would generate a real policy.`, type: 'success' })
-        return { ...a, policyCreated: true, reviewHistory: [...a.reviewHistory, { date: new Date().toISOString().split('T')[0], action: 'Policy Created', note: 'Demo policy record created.', reviewer: 'Admin' }] }
-      }
-      const note = action === 'rejected' ? (reason || 'Application rejected by admin.') : 'Application approved by admin.'
-      setToast({ message: `Application ${appId} ${action}.`, type: 'success' })
-      return {
-        ...a,
-        status: action,
-        rejectionReason: action === 'rejected' ? note : a.rejectionReason,
-        reviewHistory: [...a.reviewHistory, { date: new Date().toISOString().split('T')[0], action: action === 'approved' ? 'Approved' : 'Rejected', note, reviewer: 'Admin' }]
-      }
-    }))
+  function done(msg) {
+    setApproving(null)
+    setRejecting(null)
+    setMessage(msg)
+    reload()
+    Object.values(counts).forEach((c) => c.reload())
   }
 
   return (
     <div>
-      <PageHeader title="Insurance Applications" subtitle="Review, approve, and manage insurance applications." />
+      <PageHeader
+        title="Underwriting queue"
+        subtitle="Review insurance applications. Approval issues the policy and its premium schedule atomically."
+        actions={<Button variant="secondary" size="sm" icon={RotateCw} onClick={reload}>Refresh</Button>}
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <KPICard icon={FileStack}    color="#168BFF" bg="#EFF6FF" label="Total"    value={total}    note="All applications" />
-        <KPICard icon={Clock}        color="#F59E0B" bg="#FFFBEB" label="Pending"  value={pending}  note="Awaiting review" />
-        <KPICard icon={CheckCircle2} color="#10B981" bg="#F0FDF4" label="Approved" value={approved} note="Ready for policy" />
-        <KPICard icon={XCircle}      color="#EF4444" bg="#FEF2F2" label="Rejected" value={rejected} note="Not approved" />
-      </div>
+      <KpiBand cols={3}>
+        <Kpi label="Awaiting decision" value={counts.PENDING.body?.total ?? '—'} tone={counts.PENDING.body?.total ? 'warn' : ''} foot="Pending applications" />
+        <Kpi label="Approved" value={counts.APPROVED.body?.total ?? '—'} foot="Policies issued from applications" />
+        <Kpi label="Rejected" value={counts.REJECTED.body?.total ?? '—'} />
+      </KpiBand>
 
-      <Card style={{ marginBottom: 16, padding: '14px 20px' }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: '1 1 240px' }}>
-            <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
-            <input className="input input-icon-left" style={{ height: 36, fontSize: 13 }} placeholder="Search ID, customer, type…"
-              value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
-          </div>
-          <Button variant="secondary" size="sm" icon={SlidersHorizontal} onClick={() => {}} aria-label="Filters">
-            Filters
-          </Button>
-          {hasFilters && <Button variant="ghost" size="sm" icon={X} onClick={clearFilters}>Clear</Button>}
-        </div>
-        <div style={{ display: 'flex', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
-          <select className="select" style={{ height: 36, fontSize: 13, minWidth: 150 }} value={statusFilter} onChange={e => { setStatus(e.target.value); setPage(1) }}>
-            <option value="">All Statuses</option>
-            {Object.entries(APPLICATION_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-          </select>
-          <select className="select" style={{ height: 36, fontSize: 13, minWidth: 160 }} value={typeFilter} onChange={e => { setType(e.target.value); setPage(1) }}>
-            <option value="">All Types</option>
-            {initialPolicyTypes.map(t => <option key={t.typeId} value={t.typeId}>{t.name}</option>)}
-          </select>
-        </div>
-      </Card>
+      {message && <div style={{ marginBottom: 12 }}><Notice tone="ok">{message}</Notice></div>}
 
-      <Card padding={false}>
-        <div style={{ padding: '16px 20px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-          <span style={{ fontSize: 13, color: '#64748B' }}>Showing <strong style={{ color: '#172033' }}>{filtered.length}</strong> application{filtered.length !== 1 ? 's' : ''}</span>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <label style={{ fontSize: 12.5, color: '#64748B' }}>Rows:</label>
-            <select className="select" style={{ height: 32, fontSize: 12.5, width: 70 }} value={rowsPerPage} onChange={e => { setRows(Number(e.target.value)); setPage(1) }}>
-              {ROWS_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
+      <Panel flush>
+        <div className="filters">
+          <Input id="app-search" prefixIcon={Search} placeholder="Application no., customer or plan" aria-label="Search applications"
+            value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
+          <Segmented label="Filter by status" value={status} onChange={(v) => { setStatus(v); setPage(1) }} options={STATUS_FILTERS} />
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="data-table" role="table">
-            <thead><tr>{COLS.map(c => (
-              <th key={c.key} onClick={c.sortable ? () => sort(c.key) : undefined}
-                style={{ cursor: c.sortable ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>{c.label}{c.sortable && <SortIcon col={c.key} sortKey={sortKey} sortDir={sortDir} />}</span>
-              </th>
-            ))}</tr></thead>
-            <tbody>
-              {pageRows.length === 0 ? (
-                <tr><td colSpan={COLS.length} style={{ padding: 0 }}><EmptyState title="No applications" description={hasFilters ? 'No results match.' : 'No applications yet.'} /></td></tr>
-              ) : pageRows.map(a => (
-                <tr key={a.applicationId} style={{ cursor: 'pointer' }} onClick={() => setViewApp(a)}>
-                  <td style={{ fontWeight: 600, color: '#168BFF', fontFamily: 'monospace', fontSize: 12.5 }}>{a.applicationId}</td>
-                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Avatar name={a.customerName} /><span style={{ fontWeight: 600, fontSize: 13 }}>{a.customerName}</span></div></td>
-                  <td style={{ fontSize: 13 }}>{a.policyType}</td>
-                  <td style={{ fontWeight: 600 }}>{formatINR(a.requestedCoverage)}</td>
-                  <td style={{ fontSize: 13, color: '#64748B' }}>{a.applicationDate}</td>
-                  <td><SBadge status={a.status} map={APPLICATION_STATUS} /></td>
-                  <td onClick={e => e.stopPropagation()}>
-                    <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setViewApp(a)} aria-label="View"><Eye size={16} /></button>
-                  </td>
+        <DataState loading={loading} error={error} onRetry={reload} empty={data?.length === 0}
+          emptyText={status === 'PENDING' ? 'No applications are waiting for review.' : 'No applications match these filters.'}>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Application</th><th scope="col">Applicant</th><th scope="col">Plan</th>
+                  <th scope="col" className="numeric">Requested cover</th><th scope="col">Submitted</th><th scope="col">Status</th>
+                  <th scope="col"><span className="sr-only">Actions</span></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 && (
-          <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F1F5F9', flexWrap: 'wrap', gap: 8 }}>
-            <span style={{ fontSize: 12.5, color: '#64748B' }}>Page {safePage} of {totalPages}</span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setPage(p => Math.max(1, p-1))} disabled={safePage===1}><ChevronLeft size={15} /></button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).filter(n => n === 1 || n === totalPages || Math.abs(n - safePage) <= 1)
-                .reduce((a, n, i, arr) => { if (i > 0 && n - arr[i-1] > 1) a.push('…'); a.push(n); return a }, [])
-                .map((n, i) => n === '…' ? <span key={`e${i}`} style={{ padding: '0 4px', color: '#94A3B8' }}>…</span>
-                  : <button key={n} className={`btn btn-sm ${n === safePage ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setPage(n)} style={{ minWidth: 32 }}>{n}</button>)}
-              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={safePage===totalPages}><ChevronRight size={15} /></button>
-            </div>
+              </thead>
+              <tbody>
+                {data?.map((a) => (
+                  <tr key={a.id}>
+                    <td>
+                      <span className="mono">{a.applicationNumber}</span>
+                      {a.assistedByAgent && <div className="muted" style={{ fontSize: 12 }}>via {fullName(a.assistedByAgent)}</div>}
+                    </td>
+                    <td>
+                      <Link className="table-link" to={`/admin/customers/${a.customer.id}`}>{fullName(a.customer)}</Link>
+                      <div className="muted" style={{ fontSize: 12 }}>{a.customer.customerNumber}</div>
+                    </td>
+                    <td>{a.policyType.name}</td>
+                    <td className="numeric">{inr(a.requestedCoverage)}</td>
+                    <td className="nowrap">{date(a.applicationDate)}<div className="muted" style={{ fontSize: 12 }}>{relativeDays(a.applicationDate)}</div></td>
+                    <td>
+                      <StatusBadge status={a.status} />
+                      {a.policy && <div><Link className="table-link" style={{ fontSize: 12 }} to={`/admin/policies/${a.policy.id}`}>{a.policy.policyNumber}</Link></div>}
+                    </td>
+                    <td className="nowrap" style={{ textAlign: 'right' }}>
+                      {a.status === 'PENDING' && (
+                        <>
+                          <Button size="sm" onClick={() => openApprove(a)}>Approve</Button>{' '}
+                          <Button size="sm" variant="secondary" onClick={() => setRejecting(a)}>Reject</Button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </Card>
+          <Pager body={body} page={page} onPage={setPage} />
+        </DataState>
+      </Panel>
 
-      <AppDetailModal open={!!viewApp} onClose={() => setViewApp(null)} app={viewApp} onStatusChange={handleStatusChange} />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ApproveModal app={approving} onClose={() => setApproving(null)} onDone={done} />
+      <RejectModal key={rejecting?.id || 'none'} app={rejecting} onClose={() => setRejecting(null)} onDone={done} />
     </div>
   )
 }

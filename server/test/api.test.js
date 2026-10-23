@@ -1,8 +1,27 @@
-import { test, describe } from 'node:test'
+import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
+import bcrypt from 'bcryptjs'
 import app from '../src/app.js'
+import prisma from '../src/config/db.js'
+import { signToken } from '../src/middleware/auth.js'
+
+// Admin-only endpoints now require authentication, so validation is exercised as a
+// temporary fictional admin (created here, removed in teardown).
+let adminUser
+let AUTH = {}
 
 describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
+  before(async () => {
+    adminUser = await prisma.user.create({
+      data: { email: `qa.apitest.${Date.now()}@example.test`, name: 'QA API Test Admin', role: 'ADMIN', passwordHash: await bcrypt.hash(`x-${Date.now()}-unused`, 4) },
+    })
+    AUTH = { Authorization: `Bearer ${signToken(adminUser)}` }
+  })
+
+  after(async () => {
+    await prisma.activityLog.deleteMany({ where: { actorUserId: adminUser.id } })
+    await prisma.user.delete({ where: { id: adminUser.id } })
+  })
 
   // Helper to run ephemeral test requests against Express app
   async function withServer(fn) {
@@ -65,7 +84,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/customers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({ firstName: 'Aarav' }), // missing lastName, email, phone, etc.
       })
       assert.equal(res.status, 400)
@@ -81,7 +100,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/policy-types`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({ name: 'Term Life Basic' }),
       })
       assert.equal(res.status, 400)
@@ -97,7 +116,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/policies`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({
           customerId: 'not-a-valid-uuid',
           policyTypeId: 'also-invalid',
@@ -118,7 +137,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/applications`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({
           customerId: '550e8400-e29b-41d4-a716-446655440000',
           policyTypeId: '550e8400-e29b-41d4-a716-446655440001',
@@ -136,7 +155,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/applications/550e8400-e29b-41d4-a716-446655440000/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({ rejectionReason: 'No' }), // too short
       })
       assert.equal(res.status, 400)
@@ -151,7 +170,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/payments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({
           premiumId: '550e8400-e29b-41d4-a716-446655440000',
           amount: 0,
@@ -172,7 +191,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/beneficiaries`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({
           policyId: '550e8400-e29b-41d4-a716-446655440000',
           name: 'Primary Beneficiary',
@@ -192,7 +211,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/claims`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({
           customerId: '550e8400-e29b-41d4-a716-446655440000',
           policyId: '550e8400-e29b-41d4-a716-446655440001',
@@ -213,7 +232,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/claims/550e8400-e29b-41d4-a716-446655440000/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({ rejectionReason: '   ' }),
       })
       assert.equal(res.status, 400)
@@ -227,7 +246,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/claims/550e8400-e29b-41d4-a716-446655440000/settle`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({ settlementMethod: '' }), // missing transactionRef & empty method
       })
       assert.equal(res.status, 400)
@@ -243,7 +262,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/agents`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({
           firstName: 'Rajesh',
           lastName: 'Sharma',
@@ -264,7 +283,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/documents`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({ name: 'Aadhaar Card' }),
       })
       assert.equal(res.status, 400)
@@ -280,7 +299,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/renewals`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({
           policyId: '550e8400-e29b-41d4-a716-446655440000',
           newStartDate: 'not-a-date',
@@ -299,7 +318,7 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/insurance-companies`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...AUTH },
         body: JSON.stringify({ name: 'HDFC ERGO General Insurance' }),
       })
       assert.equal(res.status, 400)
@@ -311,6 +330,13 @@ describe('PHASE 3: Backend API Endpoint & Validation Tests', () => {
   })
 
   // 14. 404 Routing Protection
+  test('Admin-only endpoints reject anonymous requests', async () => {
+    await withServer(async (base) => {
+      const res = await fetch(`${base}/customers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      assert.equal(res.status, 401)
+    })
+  })
+
   test('Undefined endpoint returns structured 404 response', async () => {
     await withServer(async (base) => {
       const res = await fetch(`${base}/undefined-module-xyz`)

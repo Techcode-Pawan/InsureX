@@ -133,18 +133,23 @@ enum RenewalStatus {
 // ════════════════════════════════════════════════════════════
 
 model User {
-  id           String          @id @default(uuid())
-  email        String          @unique
+  id           String    @id @default(uuid())
+  email        String    @unique
   passwordHash String
-  role         Role            @default(CUSTOMER)
+  role         Role      @default(CUSTOMER)
   name         String
   phone        String?
-  isActive     Boolean         @default(true)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  isActive     Boolean   @default(true)
+  // Incremented on logout / password change / deactivation; JWTs carrying an older value are rejected.
+  tokenVersion Int       @default(0)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  customer     Customer?
-  agent        InsuranceAgent?
+  customer      Customer?
+  agent         InsuranceAgent?
+  notifications Notification[]
+  activities    ActivityLog[]
 
   @@index([email])
   @@index([role])
@@ -155,10 +160,10 @@ model User {
 // ════════════════════════════════════════════════════════════
 
 model InsuranceCompany {
-  id                 String           @id @default(uuid())
+  id                 String        @id @default(uuid())
   name               String
   shortName          String?
-  registrationNumber String           @unique
+  registrationNumber String        @unique
   category           String
   phone              String
   email              String
@@ -167,15 +172,15 @@ model InsuranceCompany {
   city               String
   state              String
   postalCode         String
-  solvencyRatio      Decimal?         @db.Decimal(5, 2)
+  solvencyRatio      Decimal?      @db.Decimal(5, 2)
   rating             String?
-  status             CompanyStatus    @default(ACTIVE)
-  description        String?          @db.Text
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  status             CompanyStatus @default(ACTIVE)
+  description        String?       @db.Text
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
-  policies           InsurancePolicy[]
-  agents             InsuranceAgent[]
+  policies InsurancePolicy[]
+  agents   InsuranceAgent[]
 
   @@index([registrationNumber])
   @@index([status])
@@ -186,15 +191,15 @@ model InsuranceCompany {
 // ════════════════════════════════════════════════════════════
 
 model Customer {
-  id                  String                 @id @default(uuid())
-  customerNumber      String                 @unique
-  userId              String?                @unique
-  user                User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id                  String          @id @default(uuid())
+  customerNumber      String          @unique
+  userId              String?         @unique
+  user                User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   firstName           String
   lastName            String
   dateOfBirth         DateTime
   gender              String
-  email               String                 @unique
+  email               String          @unique
   phone               String
   address             String
   city                String
@@ -202,20 +207,24 @@ model Customer {
   postalCode          String
   idProofType         String
   maskedIdProofNumber String
-  status              CustomerStatus         @default(ACTIVE)
-  registrationDate    DateTime               @default(now())
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
+  status              CustomerStatus  @default(ACTIVE)
+  // Servicing agent. Agents may only see customers assigned to them.
+  assignedAgentId     String?
+  assignedAgent       InsuranceAgent? @relation("AgentAssignedCustomers", fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  registrationDate    DateTime        @default(now())
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
-  applications        InsuranceApplication[]
-  policies            InsurancePolicy[]
-  claims              Claim[]
-  documents           Document[]
+  applications InsuranceApplication[]
+  policies     InsurancePolicy[]
+  claims       Claim[]
+  documents    Document[]
 
   @@index([customerNumber])
   @@index([email])
   @@index([phone])
   @@index([status])
+  @@index([assignedAgentId])
 }
 
 // ════════════════════════════════════════════════════════════
@@ -223,20 +232,20 @@ model Customer {
 // ════════════════════════════════════════════════════════════
 
 model PolicyType {
-  id              String                 @id @default(uuid())
-  typeCode        String                 @unique
+  id              String           @id @default(uuid())
+  typeCode        String           @unique
   name            String
-  description     String                 @db.Text
-  coverageDetails String                 @db.Text
-  eligibility     String                 @db.Text
-  terms           String                 @db.Text
+  description     String           @db.Text
+  coverageDetails String           @db.Text
+  eligibility     String           @db.Text
+  terms           String           @db.Text
   icon            String?
-  status          PolicyTypeStatus       @default(ACTIVE)
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  status          PolicyTypeStatus @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
-  applications    InsuranceApplication[]
-  policies        InsurancePolicy[]
+  applications InsuranceApplication[]
+  policies     InsurancePolicy[]
 
   @@index([typeCode])
   @@index([status])
@@ -247,32 +256,36 @@ model PolicyType {
 // ════════════════════════════════════════════════════════════
 
 model InsuranceApplication {
-  id                String             @id @default(uuid())
-  applicationNumber String             @unique
+  id                String            @id @default(uuid())
+  applicationNumber String            @unique
   customerId        String
-  customer          Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer          Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
   policyTypeId      String
-  policyType        PolicyType         @relation(fields: [policyTypeId], references: [id], onDelete: Restrict)
-  requestedCoverage Decimal            @db.Decimal(14, 2)
-  annualIncome      Decimal?           @db.Decimal(14, 2)
+  policyType        PolicyType        @relation(fields: [policyTypeId], references: [id], onDelete: Restrict)
+  requestedCoverage Decimal           @db.Decimal(14, 2)
+  annualIncome      Decimal?          @db.Decimal(14, 2)
   employmentStatus  String?
   nomineeName       String?
   nomineeRelation   String?
-  status            ApplicationStatus  @default(PENDING)
-  applicationDate   DateTime           @default(now())
+  status            ApplicationStatus @default(PENDING)
+  applicationDate   DateTime          @default(now())
   reviewDate        DateTime?
-  rejectionReason   String?            @db.Text
-  notes             String?            @db.Text
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  rejectionReason   String?           @db.Text
+  notes             String?           @db.Text
+  // Agent who helped submit the application (null when submitted by the customer or an admin)
+  assistedByAgentId String?
+  assistedByAgent   InsuranceAgent?   @relation("AgentAssistedApplications", fields: [assistedByAgentId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   // 1-to-1: an approved application can result in at most one policy!
-  policy            InsurancePolicy?
+  policy InsurancePolicy?
 
   @@index([applicationNumber])
   @@index([customerId])
   @@index([policyTypeId])
   @@index([status])
+  @@index([assistedByAgentId])
 }
 
 // ════════════════════════════════════════════════════════════
@@ -301,12 +314,12 @@ model InsurancePolicy {
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
-  premiums         Premium[]
-  payments         PremiumPayment[]
-  beneficiaries    Beneficiary[]
-  claims           Claim[]
-  documents        Document[]
-  renewals         PolicyRenewal[]
+  premiums      Premium[]
+  payments      PremiumPayment[]
+  beneficiaries Beneficiary[]
+  claims        Claim[]
+  documents     Document[]
+  renewals      PolicyRenewal[]
 
   @@index([policyNumber])
   @@index([customerId])
@@ -322,21 +335,21 @@ model InsurancePolicy {
 // ════════════════════════════════════════════════════════════
 
 model Premium {
-  id                 String           @id @default(uuid())
-  premiumNumber      String           @unique
+  id                 String          @id @default(uuid())
+  premiumNumber      String          @unique
   policyId           String
-  policy             InsurancePolicy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
-  amount             Decimal          @db.Decimal(14, 2)
-  paidAmount         Decimal          @default(0) @db.Decimal(14, 2)
+  policy             InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  amount             Decimal         @db.Decimal(14, 2)
+  paidAmount         Decimal         @default(0) @db.Decimal(14, 2)
   dueDate            DateTime
   paidDate           DateTime?
-  status             PremiumStatus    @default(DUE)
+  status             PremiumStatus   @default(DUE)
   billingPeriodStart DateTime?
   billingPeriodEnd   DateTime?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
-  payments           PremiumPayment[]
+  payments PremiumPayment[]
 
   @@index([premiumNumber])
   @@index([policyId])
@@ -421,9 +434,11 @@ model InsuranceAgent {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  policies        InsurancePolicy[]
-  claims          Claim[]
-  claimProcessings ClaimProcessing[]
+  policies             InsurancePolicy[]
+  claims               Claim[]
+  claimProcessings     ClaimProcessing[]
+  assignedCustomers    Customer[]             @relation("AgentAssignedCustomers")
+  assistedApplications InsuranceApplication[] @relation("AgentAssistedApplications")
 
   @@index([agentNumber])
   @@index([licenseNumber])
@@ -437,29 +452,29 @@ model InsuranceAgent {
 // ════════════════════════════════════════════════════════════
 
 model Claim {
-  id                       String            @id @default(uuid())
-  claimNumber              String            @unique
+  id                       String          @id @default(uuid())
+  claimNumber              String          @unique
   customerId               String
-  customer                 Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer                 Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
   policyId                 String
-  policy                   InsurancePolicy   @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  policy                   InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Restrict)
   assignedAgentId          String?
-  assignedAgent            InsuranceAgent?   @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  assignedAgent            InsuranceAgent? @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
   claimType                String
-  claimDate                DateTime          @default(now())
-  claimedAmount            Decimal           @db.Decimal(14, 2)
-  approvedAmount           Decimal?          @db.Decimal(14, 2)
-  status                   ClaimStatus       @default(PENDING)
-  incidentDescription      String            @db.Text
-  rejectionReason          String?           @db.Text
+  claimDate                DateTime        @default(now())
+  claimedAmount            Decimal         @db.Decimal(14, 2)
+  approvedAmount           Decimal?        @db.Decimal(14, 2)
+  status                   ClaimStatus     @default(PENDING)
+  incidentDescription      String          @db.Text
+  rejectionReason          String?         @db.Text
   settlementDate           DateTime?
   settlementMethod         String?
   settlementTransactionRef String?
-  createdAt                DateTime          @default(now())
-  updatedAt                DateTime          @updatedAt
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
 
-  processing               ClaimProcessing?
-  documents                Document[]
+  processing ClaimProcessing?
+  documents  Document[]
 
   @@index([claimNumber])
   @@index([customerId])
@@ -498,26 +513,26 @@ model ClaimProcessing {
 // ════════════════════════════════════════════════════════════
 
 model Document {
-  id                 String          @id @default(uuid())
-  documentNumber     String          @unique
+  id                 String           @id @default(uuid())
+  documentNumber     String           @unique
   name               String
   documentType       String
   fileSize           String?
   fileFormat         String?
   customerId         String
-  customer           Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer           Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
   policyId           String?
   policy             InsurancePolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
   claimId            String?
-  claim              Claim?          @relation(fields: [claimId], references: [id], onDelete: SetNull)
-  submissionDate     DateTime        @default(now())
-  verificationStatus DocumentStatus  @default(PENDING)
-  verificationNotes  String?         @db.Text
+  claim              Claim?           @relation(fields: [claimId], references: [id], onDelete: SetNull)
+  submissionDate     DateTime         @default(now())
+  verificationStatus DocumentStatus   @default(PENDING)
+  verificationNotes  String?          @db.Text
   verifiedBy         String?
   verifiedDate       DateTime?
   fileUrl            String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   @@index([documentNumber])
   @@index([customerId])
@@ -550,4 +565,47 @@ model PolicyRenewal {
   @@index([renewalNumber])
   @@index([policyId])
   @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════
+// 15. NOTIFICATIONS (per-user, generated from business events)
+// ════════════════════════════════════════════════════════════
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String    @db.Text
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+}
+
+// ════════════════════════════════════════════════════════════
+// 16. ACTIVITY LOG (audit trail of business events)
+// ════════════════════════════════════════════════════════════
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  actor       User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorRole   Role?
+  action      String
+  entityType  String
+  entityId    String
+  // Scoping keys so customers/agents only ever see events about their own records
+  customerId  String?
+  agentId     String?
+  summary     String
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([agentId])
+  @@index([entityType, entityId])
 }

@@ -44,3 +44,12 @@ export async function getReportClaims(req, res, next) {
     next(err)
   }
 }
+
+export async function getReportSummary(req, res, next) {
+  try {
+    const data = await dashboardService.getReportSummary()
+    res.json({ success: true, data })
+  } catch (err) {
+    next(err)
+  }
+}

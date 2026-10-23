@@ -22,6 +22,18 @@ export function errorHandler(err, req, res, next) {
     }))
   }
 
+  // Upload errors (size/count limits)
+  if (err.name === 'MulterError') {
+    statusCode = 400
+    message = err.code === 'LIMIT_FILE_SIZE' ? 'File is too large. The maximum size is 5 MB.' : 'The upload could not be processed.'
+  }
+
+  // Malformed JSON body
+  if (err.type === 'entity.parse.failed') {
+    statusCode = 400
+    message = 'Request body is not valid JSON.'
+  }
+
   // Handle Prisma Known Request Errors
   if (err.code === 'P2002') {
     statusCode = 409
@@ -33,6 +45,12 @@ export function errorHandler(err, req, res, next) {
   } else if (err.code === 'P2003') {
     statusCode = 400
     message = 'Foreign key constraint violation. Referenced record does not exist.'
+  }
+
+  // Never leak internal error details for unexpected failures
+  if (statusCode >= 500 && !err.isOperational) {
+    if (process.env.NODE_ENV !== 'test') console.error(err)
+    message = 'Something went wrong on our side. Please try again.'
   }
 
   // Hide stack trace in production

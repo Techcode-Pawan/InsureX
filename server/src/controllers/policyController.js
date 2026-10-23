@@ -33,7 +33,7 @@ export async function createPolicy(req, res, next) {
 
 export async function updatePolicy(req, res, next) {
   try {
-    const policy = await policyService.updatePolicy(req.params.id, req.body)
+    const policy = await policyService.updatePolicy(req.params.id, req.body, req.user)
     res.json({
       success: true,
       message: 'Policy updated successfully.',

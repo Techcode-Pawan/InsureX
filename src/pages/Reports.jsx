@@ -1,355 +1,223 @@
-import { useState, useMemo } from 'react'
-import {
-  BarChart3, PieChart, TrendingUp, Download, Calendar,
-  Shield, Banknote, Users, RefreshCcw, CheckCircle2,
-  FileSpreadsheet, ArrowUpRight,
-} from 'lucide-react'
-
-import {
-  ResponsiveContainer, BarChart, Bar, LineChart, Line,
-  PieChart as RechartsPie, Pie, Cell, AreaChart, Area,
-  XAxis, YAxis, Tooltip, Legend, CartesianGrid,
-} from 'recharts'
-
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { Download, RotateCw } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
-import Card, { CardHeader } from '../components/ui/Card'
-import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
-import { Toast } from '../components/ui/Toast'
+import { StatusBadge } from '../components/ui/Badge'
+import { Panel, KpiBand, Kpi, DataState } from '../components/panel'
+import { useApi } from '../lib/useApi'
+import { inr, inrCompact, dateTime, titleCase } from '../lib/format'
 
-import {
-  policyDistributionData, premiumMonthlyTrend, claimStatusDistribution,
-  customerRegistrationTrend, renewalStatisticsData, reportKPIs,
-  formatINR, exportToCSV,
-} from '../data/reportData'
+const AXIS = { fontSize: 12, fill: '#64748B' }
 
-// Custom Tooltip for Rupee currency values
-function CurrencyTooltip({ active, payload, label }) {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{ background: '#0F172A', color: '#FFFFFF', padding: '8px 12px', borderRadius: 8, fontSize: 12, boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
-        <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#94A3B8' }}>{label}</p>
-        {payload.map((entry, idx) => (
-          <p key={idx} style={{ margin: 0, color: entry.color || '#38BDF8', fontWeight: 600 }}>
-            {entry.name}: {formatINR(entry.value)}
-          </p>
-        ))}
-      </div>
-    )
-  }
-  return null
+function csvDownload(name, rows) {
+  if (!rows?.length) return
+  const cols = Object.keys(rows[0])
+  const lines = [cols.join(','), ...rows.map((r) => cols.map((c) => `"${String(r[c] ?? '').replace(/"/g, '""')}"`).join(','))]
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }))
+  a.download = `insurex-${name}-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(a.href)
 }
 
-function StandardTooltip({ active, payload, label }) {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{ background: '#0F172A', color: '#FFFFFF', padding: '8px 12px', borderRadius: 8, fontSize: 12, boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
-        <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#94A3B8' }}>{label}</p>
-        {payload.map((entry, idx) => (
-          <p key={idx} style={{ margin: 0, color: entry.color || '#38BDF8', fontWeight: 600 }}>
-            {entry.name}: {entry.value}
-          </p>
-        ))}
-      </div>
-    )
-  }
-  return null
-}
-
-function MetricCard({ label, value, sub, change, icon: Icon, color, bg }) {
+function ExportButton({ name, rows }) {
   return (
-    <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-          <p style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 800, color: '#172033' }}>{value}</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {change && (
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: '#10B981', display: 'inline-flex', alignItems: 'center' }}>
-                <ArrowUpRight size={13} /> {change}
-              </span>
-            )}
-            <span style={{ fontSize: 12, color: '#94A3B8' }}>{sub}</span>
-          </div>
-        </div>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon size={22} style={{ color }} />
-        </div>
-      </div>
-    </Card>
+    <Button size="sm" variant="ghost" icon={Download} disabled={!rows?.length} onClick={() => csvDownload(name, rows)} aria-label={`Export ${name} as CSV`}>
+      CSV
+    </Button>
+  )
+}
+
+// Fills all 12 months so empty months render as zero instead of being skipped.
+function twelveMonths(rows = []) {
+  const out = []
+  const now = new Date()
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const row = rows.find((r) => r.month === key)
+    out.push({
+      month: key,
+      label: d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
+      amount: row ? Number(row.amount) : 0,
+      payments: row ? row.payments : 0,
+    })
+  }
+  return out
+}
+
+function MoneyTip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 6, padding: '8px 12px', fontSize: 12.5, boxShadow: 'var(--shadow-md)' }}>
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{label}</div>
+      {payload.map((p) => <div key={p.dataKey}>{p.name}: <strong>{inr(p.value)}</strong></div>)}
+    </div>
   )
 }
 
 export default function Reports() {
-  const [timeframe, setTimeframe] = useState('12m') // '6m' | '12m' | 'ytd'
-  const [toast, setToast] = useState(null)
-
-  // Filter trends according to timeframe
-  const filteredTrends = useMemo(() => {
-    if (timeframe === '6m') return premiumMonthlyTrend.slice(-6)
-    return premiumMonthlyTrend
-  }, [timeframe])
-
-  // CSV Export Handlers
-  function handleExportPolicies() {
-    exportToCSV('insurex_policy_distribution', policyDistributionData.map(d => ({
-      Category: d.name,
-      PolicyCount: d.count,
-      TotalSumAssured: d.value,
-    })))
-    setToast({ message: 'Policy distribution exported to CSV.', type: 'success' })
-  }
-
-  function handleExportPremiums() {
-    exportToCSV('insurex_premium_collections', premiumMonthlyTrend.map(d => ({
-      Month: d.month,
-      CollectedINR: d.collected,
-      TargetINR: d.target,
-    })))
-    setToast({ message: 'Premium collections trend exported to CSV.', type: 'success' })
-  }
-
-  function handleExportClaims() {
-    exportToCSV('insurex_claim_statistics', claimStatusDistribution.map(d => ({
-      Status: d.name,
-      ClaimsCount: d.count,
-      TotalClaimValue: d.value,
-    })))
-    setToast({ message: 'Claim distribution exported to CSV.', type: 'success' })
-  }
-
-  function handleExportMaster() {
-    const master = [
-      { Metric: 'Gross Written Premium', Value: formatINR(reportKPIs.grossWrittenPremium) },
-      { Metric: 'Claim Settlement Ratio', Value: `${reportKPIs.claimsSettlementRatio}%` },
-      { Metric: 'Average Claim TAT', Value: `${reportKPIs.averageClaimTAT} days` },
-      { Metric: 'Policy Retention Rate', Value: `${reportKPIs.policyRetentionRate}%` },
-    ]
-    exportToCSV('insurex_executive_kpis', master)
-    setToast({ message: 'Executive summary report exported to CSV.', type: 'success' })
-  }
+  const { data, loading, error, reload } = useApi('/reports/summary')
+  const months = twelveMonths(data?.premiumsByMonth)
+  const collected12 = months.reduce((s, m) => s + m.amount, 0)
+  const annualPremium = (data?.policiesByType || []).reduce((s, p) => s + p.annualPremium, 0)
+  const outstanding = (data?.premiumsByStatus || []).reduce((s, p) => s + p.outstanding, 0)
+  const settled = (data?.claimsByStatus || []).find((c) => c.status === 'SETTLED')
+  const decided = (data?.claimsByStatus || []).filter((c) => ['APPROVED', 'SETTLED', 'REJECTED'].includes(c.status))
+  const approvedCount = decided.filter((c) => c.status !== 'REJECTED').reduce((s, c) => s + c.count, 0)
+  const decidedCount = decided.reduce((s, c) => s + c.count, 0)
+  const empty = loading && !data
 
   return (
     <div>
       <PageHeader
-        title="Executive Reports & Analytics"
-        subtitle="Business intelligence dashboard covering portfolio exposure, premium inflows, claim settlement ratios, and renewals."
-        actions={
-          <div style={{ display: 'flex', gap: 8 }}>
-            <select
-              className="select"
-              style={{ height: 34, fontSize: 12.5 }}
-              value={timeframe}
-              onChange={e => setTimeframe(e.target.value)}
-            >
-              <option value="12m">Last 12 Months</option>
-              <option value="6m">Last 6 Months</option>
-              <option value="ytd">Year to Date (YTD)</option>
-            </select>
-            <Button
-              variant="primary"
-              size="sm"
-              icon={Download}
-              onClick={handleExportMaster}
-            >
-              Export Report (CSV)
-            </Button>
-          </div>
-        }
+        title="Reports"
+        subtitle={data ? `Aggregated from the live database · generated ${dateTime(data.generatedAt)}` : 'Aggregated from the live database'}
+        actions={<Button variant="secondary" size="sm" icon={RotateCw} loading={loading} onClick={reload}>Refresh</Button>}
       />
 
-      {/* Demo notice banner */}
-      <div style={{ padding: '9px 14px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ fontSize: 12.5, color: '#64748B' }}>
-          📊 <strong>Demonstration Datasets:</strong> All report calculations, charts, and ratios are generated from InsureX mock demonstration datasets.
-        </span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <Button variant="ghost" size="sm" icon={FileSpreadsheet} onClick={handleExportPolicies}>Export Policies</Button>
-          <Button variant="ghost" size="sm" icon={FileSpreadsheet} onClick={handleExportPremiums}>Export Premiums</Button>
-          <Button variant="ghost" size="sm" icon={FileSpreadsheet} onClick={handleExportClaims}>Export Claims</Button>
-        </div>
-      </div>
+      {error ? <Panel><DataState error={error} onRetry={reload} /></Panel> : (
+        <>
+          <KpiBand cols={4}>
+            <Kpi label="Collected, last 12 months" value={data ? inrCompact(collected12) : '—'} foot={data && `${months.reduce((s, m) => s + m.payments, 0)} confirmed payments`} />
+            <Kpi label="Annualised premium, active book" value={data ? inrCompact(annualPremium) : '—'} foot="Installment × frequency" />
+            <Kpi label="Outstanding premiums" value={data ? inrCompact(outstanding) : '—'} foot="Billed but not yet paid" tone={outstanding > 0 ? 'warn' : ''} />
+            <Kpi label="Claims settled" value={data ? inrCompact(settled?.approved || 0) : '—'}
+              foot={data && (decidedCount ? `${Math.round((approvedCount / decidedCount) * 100)}% of decided claims approved` : 'No decided claims yet')} />
+          </KpiBand>
 
-      {/* Key Executive KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 22 }}>
-        <MetricCard
-          label="Gross Written Premium"
-          value={formatINR(reportKPIs.grossWrittenPremium)}
-          change={`+${reportKPIs.gwpGrowthPct}%`}
-          sub="vs preceding year"
-          icon={Banknote}
-          color="#168BFF"
-          bg="#EFF6FF"
-        />
-        <MetricCard
-          label="Claim Settlement Ratio"
-          value={`${reportKPIs.claimsSettlementRatio}%`}
-          change={reportKPIs.csrImprovement}
-          sub="regulatory benchmark 90%"
-          icon={CheckCircle2}
-          color="#10B981"
-          bg="#F0FDF4"
-        />
-        <MetricCard
-          label="Average Claim Turnaround"
-          value={`${reportKPIs.averageClaimTAT} Days`}
-          sub="from filing to disbursement"
-          icon={TrendingUp}
-          color="#8B5CF6"
-          bg="#F5F3FF"
-        />
-        <MetricCard
-          label="Policy Retention Rate"
-          value={`${reportKPIs.policyRetentionRate}%`}
-          sub={reportKPIs.retentionTarget}
-          icon={RefreshCcw}
-          color="#F59E0B"
-          bg="#FFFBEB"
-        />
-      </div>
+          <Panel title="Premium collections" note="Confirmed payments per month, last 12 months" action={<ExportButton name="premium-collections" rows={months.map(({ month, amount, payments }) => ({ month, amount, payments }))} />} className="" >
+            {empty ? <div className="skel" style={{ height: 260 }} /> : (
+              <div style={{ height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={months} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#EDF2F7" vertical={false} />
+                    <XAxis dataKey="label" tick={AXIS} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={inrCompact} tick={AXIS} axisLine={false} tickLine={false} width={56} />
+                    <Tooltip content={<MoneyTip />} cursor={{ fill: '#F5F8FC' }} />
+                    <Bar dataKey="amount" name="Collected" fill="#168BFF" radius={[3, 3, 0, 0]} maxBarSize={36} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {data && collected12 === 0 && <p className="muted" style={{ margin: '8px 0 0', fontSize: 13 }}>No confirmed payments in the last 12 months.</p>}
+          </Panel>
 
-      {/* CHART SECTION 1: Premium Inflow & Policy Distribution */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 18, marginBottom: 20 }}>
-        {/* Monthly Premium Collection Trend */}
-        <Card>
-          <CardHeader
-            title="Premium Collections Trend (₹)"
-            subtitle="Actual collected vs budgeted target across months"
-          />
-          <div style={{ width: '100%', height: 280 }}>
-            <ResponsiveContainer>
-              <BarChart data={filteredTrends} margin={{ top: 10, right: 10, left: 15, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="month" stroke="#94A3B8" fontSize={11.5} />
-                <YAxis
-                  stroke="#94A3B8"
-                  fontSize={11.5}
-                  tickFormatter={val => `₹${(val / 100000).toFixed(0)}L`}
-                />
-                <Tooltip content={<CurrencyTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
-                <Bar dataKey="collected" name="Collected" fill="#168BFF" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="target" name="Target" fill="#E2E8F0" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+          <div className="px-grid cols-2" style={{ margin: '16px 0' }}>
+            <Panel title="Book by policy type" note="Active policies, cover and annualised premium" action={<ExportButton name="policies-by-type" rows={data?.policiesByType} />} flush>
+              <DataState loading={empty} empty={data?.policiesByType.length === 0} emptyText="No policy types defined.">
+                <div className="table-scroll">
+                  <table className="data-table">
+                    <thead><tr><th scope="col">Policy type</th><th scope="col" className="numeric">Active</th><th scope="col" className="numeric">All-time</th><th scope="col" className="numeric">Sum assured</th><th scope="col" className="numeric">Annual premium</th></tr></thead>
+                    <tbody>
+                      {data?.policiesByType.map((p) => (
+                        <tr key={p.policyType}>
+                          <td>{p.policyType}</td>
+                          <td className="numeric">{p.active}</td>
+                          <td className="numeric">{p.total}</td>
+                          <td className="numeric">{inrCompact(p.sumAssured)}</td>
+                          <td className="numeric">{inr(p.annualPremium)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </DataState>
+            </Panel>
 
-        {/* Policy Distribution Donut */}
-        <Card>
-          <CardHeader
-            title="Policy Portfolio Distribution"
-            subtitle="Distribution of policies by underwriting line"
-          />
-          <div style={{ width: '100%', height: 280 }}>
-            <ResponsiveContainer>
-              <RechartsPie>
-                <Pie
-                  data={policyDistributionData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={65}
-                  outerRadius={95}
-                  paddingAngle={3}
-                  dataKey="count"
-                >
-                  {policyDistributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+            <Panel title="Claims by status" note="Claimed versus approved amounts" action={<ExportButton name="claims-by-status" rows={data?.claimsByStatus} />}>
+              <DataState loading={empty} empty={data?.claimsByStatus.length === 0} emptyText="No claims on record.">
+                <div style={{ height: 220 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={(data?.claimsByStatus || []).map((c) => ({ ...c, label: titleCase(c.status), approvedShown: c.status === 'REJECTED' ? 0 : c.approved }))} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#EDF2F7" vertical={false} />
+                      <XAxis dataKey="label" tick={AXIS} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={inrCompact} tick={AXIS} axisLine={false} tickLine={false} width={56} />
+                      <Tooltip content={<MoneyTip />} cursor={{ fill: '#F5F8FC' }} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="claimed" name="Claimed" fill="#061426" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                      <Bar dataKey="approvedShown" name="Approved" fill="#20B8FF" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <ul className="rows" style={{ marginTop: 8 }}>
+                  {data?.claimsByStatus.map((c) => (
+                    <li key={c.status} className="row" style={{ padding: '8px 0' }}>
+                      <StatusBadge status={c.status} />
+                      <div className="row-main muted" style={{ fontSize: 12.5 }}>{c.count} claim{c.count === 1 ? '' : 's'}</div>
+                      <div className="row-end" style={{ fontSize: 12.5 }}>{inr(c.claimed)} claimed</div>
+                    </li>
                   ))}
-                </Pie>
-                <Tooltip content={<StandardTooltip />} />
-                <Legend
-                  layout="vertical"
-                  align="right"
-                  verticalAlign="middle"
-                  wrapperStyle={{ fontSize: 11.5, lineHeight: '22px' }}
-                />
-              </RechartsPie>
-            </ResponsiveContainer>
+                </ul>
+              </DataState>
+            </Panel>
+
+            <Panel title="Premium installments by status" note="Billed and outstanding amounts" action={<ExportButton name="premiums-by-status" rows={data?.premiumsByStatus} />} flush>
+              <DataState loading={empty} empty={data?.premiumsByStatus.length === 0} emptyText="No premium installments billed yet.">
+                <table className="data-table">
+                  <thead><tr><th scope="col">Status</th><th scope="col" className="numeric">Installments</th><th scope="col" className="numeric">Billed</th><th scope="col" className="numeric">Outstanding</th></tr></thead>
+                  <tbody>
+                    {data?.premiumsByStatus.map((p) => (
+                      <tr key={p.status}>
+                        <td><StatusBadge status={p.status} /></td>
+                        <td className="numeric">{p.count}</td>
+                        <td className="numeric">{inr(p.billed)}</td>
+                        <td className="numeric">{inr(p.outstanding)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </DataState>
+            </Panel>
+
+            <Panel title="Payments by method" note="Confirmed payments, all time" action={<ExportButton name="payments-by-method" rows={data?.paymentsByMethod} />} flush>
+              <DataState loading={empty} empty={data?.paymentsByMethod.length === 0} emptyText="No confirmed payments yet.">
+                <table className="data-table">
+                  <thead><tr><th scope="col">Method</th><th scope="col" className="numeric">Payments</th><th scope="col" className="numeric">Amount</th></tr></thead>
+                  <tbody>
+                    {data?.paymentsByMethod.map((p) => (
+                      <tr key={p.method}>
+                        <td>{titleCase(p.method)}</td>
+                        <td className="numeric">{p.count}</td>
+                        <td className="numeric">{inr(p.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </DataState>
+            </Panel>
           </div>
-        </Card>
-      </div>
 
-      {/* CHART SECTION 2: Claims Status & Customer Registration Trends */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 18, marginBottom: 20 }}>
-        {/* Customer Onboarding Growth */}
-        <Card>
-          <CardHeader
-            title="Customer Onboarding Velocity"
-            subtitle="Monthly new customer registrations and active policyholders"
-          />
-          <div style={{ width: '100%', height: 260 }}>
-            <ResponsiveContainer>
-              <AreaChart data={customerRegistrationTrend} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-                <defs>
-                  <linearGradient id="custGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="month" stroke="#94A3B8" fontSize={11.5} />
-                <YAxis stroke="#94A3B8" fontSize={11.5} />
-                <Tooltip content={<StandardTooltip />} />
-                <Area type="monotone" dataKey="newCustomers" name="New Registrations" stroke="#10B981" fillOpacity={1} fill="url(#custGrad)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Claim Status Breakdown */}
-        <Card>
-          <CardHeader
-            title="Claim Status Distribution"
-            subtitle="Total claims classified by adjudication stage"
-          />
-          <div style={{ width: '100%', height: 260 }}>
-            <ResponsiveContainer>
-              <RechartsPie>
-                <Pie
-                  data={claimStatusDistribution}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={85}
-                  dataKey="count"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {claimStatusDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<StandardTooltip />} />
-              </RechartsPie>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-
-      {/* CHART SECTION 3: Quarterly Renewal Statistics */}
-      <Card>
-        <CardHeader
-          title="Quarterly Policy Renewal Statistics"
-          subtitle="Renewed vs Upcoming vs Overdue policies by quarterly cohort"
-        />
-        <div style={{ width: '100%', height: 280 }}>
-          <ResponsiveContainer>
-            <BarChart data={renewalStatisticsData} margin={{ top: 10, right: 15, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis dataKey="quarter" stroke="#94A3B8" fontSize={11.5} />
-              <YAxis stroke="#94A3B8" fontSize={11.5} />
-              <Tooltip content={<StandardTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
-              <Bar dataKey="renewed" name="Renewed" fill="#10B981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="upcoming" name="Upcoming" fill="#168BFF" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="overdue" name="Overdue" fill="#EF4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="lapsed" name="Lapsed" fill="#94A3B8" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-
-      {/* Toast */}
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+          <Panel title="Agent performance" note="Assigned customers, active policies, approved assisted applications and premium collected on each agent's policies"
+            action={<ExportButton name="agent-performance" rows={data?.agentLeaderboard.map(({ id: _id, ...r }) => r)} />} flush>
+            <DataState loading={empty} empty={data?.agentLeaderboard.length === 0} emptyText="No agents registered.">
+              <div className="table-scroll">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Agent</th><th scope="col">Status</th><th scope="col" className="numeric">Customers</th>
+                      <th scope="col" className="numeric">Active policies</th><th scope="col" className="numeric">Approved applications</th>
+                      <th scope="col" className="numeric">Premium collected</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data?.agentLeaderboard.map((a) => (
+                      <tr key={a.id}>
+                        <td>{a.firstName} {a.lastName} <span className="mono">{a.agentNumber}</span></td>
+                        <td><StatusBadge status={a.status} /></td>
+                        <td className="numeric">{a.customers}</td>
+                        <td className="numeric">{a.activePolicies}</td>
+                        <td className="numeric">{a.approvedApplications}</td>
+                        <td className="numeric">{inr(a.premiumCollected)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </DataState>
+          </Panel>
+        </>
+      )}
     </div>
   )
 }
