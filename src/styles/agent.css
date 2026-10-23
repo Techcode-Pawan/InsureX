@@ -1,0 +1,151 @@
+/* ==========================================================================
+   AGENT WORKSPACE — premium skin, scoped under .ag so it never leaks into the
+   Admin or Customer panels. Builds on the .ws layout and shared tokens.
+   ========================================================================== */
+.ag {
+  --ag-radius: 12px;
+  --ag-shadow: 0 1px 2px rgba(6, 20, 38, 0.04), 0 1px 3px rgba(6, 20, 38, 0.03);
+  --ag-shadow-hover: 0 4px 14px -4px rgba(6, 20, 38, 0.12), 0 2px 4px -2px rgba(6, 20, 38, 0.05);
+  --ag-blue-tint: #EAF4FF;
+  --ag-blue-ink: #0B5FB8;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+.ag .ws-side { width: 248px; border-right: 1px solid var(--color-border); background: #FBFCFE; }
+.ag .ws-main { margin-left: 248px; }
+.ag .ws-side-brand { height: 64px; padding: 0 20px; background: #fff; }
+.ag-identity { margin: 14px 14px 6px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--ag-radius); background: #fff; display: flex; gap: 10px; align-items: center; box-shadow: var(--ag-shadow); }
+.ag-avatar { width: 38px; height: 38px; border-radius: 10px; background: var(--color-navy); color: #fff; font-weight: 650; font-size: 13.5px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: 0.02em; }
+.ag-avatar.sm { width: 30px; height: 30px; border-radius: 8px; font-size: 12px; }
+.ag-identity-name { font-weight: 600; font-size: 13.5px; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ag-identity-meta { font-size: 12px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ag-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10B981; margin-right: 5px; vertical-align: 1px; }
+
+.ag .ws-nav { padding: 6px 12px 12px; }
+.ag .ws-nav-label { padding: 16px 10px 6px; font-size: 10.5px; letter-spacing: 0.08em; }
+.ag .ws-link { position: relative; padding: 9px 12px; border-radius: 8px; color: #405069; gap: 11px; transition: background-color 0.15s ease, color 0.15s ease; }
+.ag .ws-link svg { color: #8494AA; transition: color 0.15s ease; }
+.ag .ws-link:hover { background: #F1F5FA; color: var(--color-text-primary); }
+.ag .ws-link:hover svg { color: var(--color-text-primary); }
+.ag .ws-link.active { background: var(--ag-blue-tint); color: var(--ag-blue-ink); font-weight: 600; }
+.ag .ws-link.active svg { color: var(--color-primary); }
+.ag .ws-link.active::before { content: ''; position: absolute; left: -12px; top: 7px; bottom: 7px; width: 3px; border-radius: 0 3px 3px 0; background: var(--color-primary); }
+.ag .ws-link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.ag .ws-side-foot { padding: 12px; background: #fff; }
+.ag-signout { width: 100%; border: 0; background: none; cursor: pointer; font: inherit; }
+.ag-signout:hover { background: #FEF2F2 !important; color: #B91C1C !important; }
+.ag-signout:hover svg { color: #B91C1C !important; }
+
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+.ag .ws-top { height: 64px; padding: 0 28px; gap: 14px; background: rgba(255, 255, 255, 0.92); backdrop-filter: saturate(140%) blur(6px); }
+.ag .ws-search .input { height: 38px; border-radius: 10px; background: #F7F9FC; }
+.ag .ws-search .input:focus { background: #fff; }
+.ag-account-btn { display: inline-flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px; border: 1px solid transparent; border-radius: 10px; background: none; cursor: pointer; font: inherit; color: var(--color-text-primary); }
+.ag-account-btn:hover, .ag-account-btn[aria-expanded="true"] { background: #F1F5FA; border-color: var(--color-border); }
+.ag-account-name { font-size: 13px; font-weight: 600; line-height: 1.2; text-align: left; }
+.ag-account-role { font-size: 11.5px; color: var(--color-text-secondary); text-align: left; }
+.ag-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 240px; background: #fff; border: 1px solid var(--color-border); border-radius: var(--ag-radius); box-shadow: var(--shadow-lg); z-index: 80; overflow: hidden; padding: 6px; }
+.ag-menu-head { padding: 10px 10px 12px; border-bottom: 1px solid var(--color-border-subtle); margin-bottom: 6px; }
+.ag-menu a, .ag-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 8px; color: var(--color-text-primary); text-decoration: none; font: inherit; font-size: 13.5px; border: 0; background: none; cursor: pointer; text-align: left; }
+.ag-menu a svg, .ag-menu button svg { color: #8494AA; }
+.ag-menu a:hover, .ag-menu button:hover, .ag-menu a:focus-visible, .ag-menu button:focus-visible { background: #F1F5FA; outline: none; }
+.ag-menu .danger { color: #B91C1C; }
+.ag-menu .danger svg { color: #B91C1C; }
+.ag .ws-content { padding: 26px 28px 48px; }
+
+/* ── Surfaces: every agent page gets the same card language ─────────────── */
+.ag .panel { border-radius: var(--ag-radius); box-shadow: var(--ag-shadow); }
+.ag .panel-head { padding: 15px 18px; }
+.ag .kpi-band { border-radius: var(--ag-radius); box-shadow: var(--ag-shadow); }
+.ag .px-title { font-size: 23px; letter-spacing: -0.025em; }
+.ag .data-table th { background: #F8FAFC; }
+.ag .notice { border-radius: 10px; }
+
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+.ag-hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
+.ag-hero-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-secondary); margin: 0 0 4px; }
+.ag-hero h1 { margin: 0; font-size: 25px; font-weight: 680; letter-spacing: -0.025em; color: var(--color-text-primary); }
+.ag-hero-sub { margin: 5px 0 0; color: var(--color-text-secondary); font-size: 13.5px; display: flex; gap: 6px 14px; flex-wrap: wrap; }
+.ag-hero-sub span { display: inline-flex; align-items: center; gap: 5px; }
+.ag-quick { display: flex; gap: 8px; flex-wrap: wrap; }
+.ag-quick .btn { display: inline-flex; align-items: center; gap: 6px; }
+
+.ag-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 12px; margin-bottom: 18px; background: #fff; border: 1px solid var(--color-border); border-radius: var(--ag-radius); box-shadow: var(--ag-shadow); }
+
+.ag-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(214px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.ag-kpi { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 16px 16px 14px; background: #fff; border: 1px solid var(--color-border); border-radius: var(--ag-radius); box-shadow: var(--ag-shadow); text-decoration: none; color: inherit; transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease; min-width: 0; }
+.ag-kpi:hover { box-shadow: var(--ag-shadow-hover); border-color: #D5DEEA; transform: translateY(-1px); }
+.ag-kpi:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.ag-kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ag-kpi-label { font-size: 12.5px; font-weight: 550; color: var(--color-text-secondary); }
+.ag-kpi-icon { width: 30px; height: 30px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: var(--ag-blue-tint); color: var(--color-primary); flex-shrink: 0; }
+.ag-kpi-icon.cyan { background: #E6F7FF; color: #0891B2; }
+.ag-kpi-icon.navy { background: #E8EDF4; color: var(--color-navy); }
+.ag-kpi-icon.green { background: #ECFDF5; color: #047857; }
+.ag-kpi-icon.amber { background: #FFFBEB; color: #B45309; }
+.ag-kpi-icon.red { background: #FEF2F2; color: #B91C1C; }
+.ag-kpi-value { font-size: 25px; font-weight: 680; letter-spacing: -0.025em; color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.15; margin-top: 4px; }
+.ag-kpi-foot { font-size: 12px; color: var(--color-text-secondary); line-height: 1.4; }
+.ag-kpi-foot.warn { color: #B45309; }
+.ag-kpi-foot.bad { color: #B91C1C; }
+.ag-kpi-scope { position: absolute; top: 10px; right: 52px; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-muted); }
+.ag-kpi.skeleton .ag-kpi-value { width: 60%; height: 26px; }
+
+.ag-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 26px 0 12px; }
+.ag-section-title h2 { margin: 0; font-size: 15px; font-weight: 650; color: var(--color-text-primary); }
+.ag-section-title p { margin: 0; font-size: 12.5px; color: var(--color-text-secondary); }
+
+.ag .chart-card { border-radius: var(--ag-radius); }
+.ag-legend-note { display: flex; gap: 14px; flex-wrap: wrap; }
+.ag-legend-note span { display: inline-flex; align-items: center; gap: 6px; }
+.ag-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.ag-swatch.dashed { background: repeating-linear-gradient(45deg, #F59E0B 0 3px, #FDE68A 3px 6px); }
+
+.ag-split { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; height: 100%; }
+@media (max-width: 760px) { .ag-split { grid-template-columns: minmax(0, 1fr); } }
+
+.ag-city-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ag-city-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; font-size: 13px; }
+.ag-city-list .meter { grid-column: 1 / -1; }
+
+/* ── Activity timeline ───────────────────────────────────────────────────── */
+.ag-day { font-size: 11.5px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); padding: 14px 18px 6px; background: #FAFBFD; border-top: 1px solid var(--color-border-subtle); }
+.ag-day:first-child { border-top: 0; }
+.ag-event { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 18px; border-top: 1px solid var(--color-border-subtle); text-decoration: none; color: inherit; }
+a.ag-event:hover { background: var(--color-bg-subtle); }
+.ag-event-icon { width: 34px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--ag-blue-tint); color: var(--color-primary); }
+.ag-event-title { font-size: 13.5px; color: var(--color-text-primary); line-height: 1.45; }
+.ag-event-meta { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.ag-event-time { font-size: 12px; color: var(--color-text-muted); white-space: nowrap; text-align: right; }
+
+/* ── Profile ─────────────────────────────────────────────────────────────── */
+.ag-profile-head { display: flex; gap: 16px; align-items: center; padding: 20px; background: #fff; border: 1px solid var(--color-border); border-radius: var(--ag-radius); box-shadow: var(--ag-shadow); margin-bottom: 16px; flex-wrap: wrap; }
+.ag-profile-head .ag-avatar { width: 56px; height: 56px; border-radius: 14px; font-size: 19px; }
+.ag-profile-name { margin: 0; font-size: 20px; font-weight: 680; letter-spacing: -0.02em; }
+.ag-profile-meta { margin: 3px 0 0; color: var(--color-text-secondary); font-size: 13px; }
+.ag-profile-stats { margin-left: auto; display: flex; gap: 22px; }
+.ag-profile-stats dt { font-size: 12px; color: var(--color-text-secondary); }
+.ag-profile-stats dd { margin: 2px 0 0; font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.ag-lock { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--color-text-muted); }
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .ag .ws-main { margin-left: 0; }
+  .ag .ws-top { padding: 0 14px; }
+  .ag .ws-content { padding: 18px 16px 40px; }
+  .ag-account-text { display: none; }
+}
+@media (max-width: 640px) {
+  .ag-hero h1 { font-size: 21px; }
+  .ag-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ag-kpi { padding: 13px 12px 12px; }
+  .ag-kpi-value { font-size: 20px; }
+  .ag-kpi-scope { display: none; }
+  .ag-profile-stats { margin-left: 0; }
+  .ag-event { grid-template-columns: 30px minmax(0, 1fr); }
+  .ag-event-time { grid-column: 2; text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ag-kpi, .ag .ws-link, .ag .ws-link svg { transition: none; }
+  .ag-kpi:hover { transform: none; }
+}

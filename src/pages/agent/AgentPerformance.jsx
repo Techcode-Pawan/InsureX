@@ -4,8 +4,7 @@ import { useApi } from '../../lib/useApi'
 import { inr, inrCompact } from '../../lib/format'
 import { PageHead, Panel, KpiBand, Kpi, DataState, ErrorState } from '../../components/panel'
 import { StatusBadge } from '../../components/ui/Badge'
-
-const PRIMARY = '#168BFF'
+import { ChartTooltip, CHART, axisProps } from '../../components/charts'
 
 function monthLabel(ym) {
   const [y, m] = ym.split('-').map(Number)
@@ -24,16 +23,6 @@ function lastSixMonths(rows) {
     out.push({ month: monthLabel(key), policies: byMonth[key] || 0 })
   }
   return out
-}
-
-function ChartTip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div style={{ background: '#fff', border: '1px solid var(--color-border)', borderRadius: 6, padding: '8px 12px', fontSize: 12.5, boxShadow: 'var(--shadow-md)' }}>
-      <div style={{ fontWeight: 600 }}>{label}</div>
-      <div>{payload[0].value} polic{payload[0].value === 1 ? 'y' : 'ies'} issued</div>
-    </div>
-  )
 }
 
 export default function AgentPerformance() {
@@ -68,11 +57,11 @@ export default function AgentPerformance() {
             <div style={{ height: 260 }} role="img" aria-label={`Policies issued per month: ${monthly.map((m) => `${m.month} ${m.policies}`).join(', ')}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthly} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="#EDF2F7" />
-                  <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
-                  <Tooltip content={<ChartTip />} cursor={{ fill: '#F5F8FC' }} />
-                  <Bar dataKey="policies" fill={PRIMARY} radius={[3, 3, 0, 0]} maxBarSize={36} />
+                  <CartesianGrid vertical={false} stroke={CHART.grid} />
+                  <XAxis dataKey="month" {...axisProps} />
+                  <YAxis allowDecimals={false} {...axisProps} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: '#F5F8FC' }} />
+                  <Bar dataKey="policies" name="Policies issued" fill={CHART.primary} radius={[3, 3, 0, 0]} maxBarSize={36} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

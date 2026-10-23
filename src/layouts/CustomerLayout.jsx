@@ -9,6 +9,7 @@ import { initials } from '../lib/format'
 const TOP_NAV = [
   { to: '/user', label: 'Home', end: true },
   { to: '/user/plans', label: 'Explore plans' },
+  { to: '/user/companies', label: 'Insurers' },
   { to: '/user/policies', label: 'My policies' },
   { to: '/user/payments', label: 'Payments' },
   { to: '/user/claims', label: 'Claims' },
@@ -49,6 +50,7 @@ function AccountMenu() {
     ['/user/applications', 'My applications'],
     ['/user/renewals', 'Renewals'],
     ['/user/beneficiaries', 'Beneficiaries'],
+    ['/user/companies', 'Insurers'],
     ['/user/notifications', 'Notifications'],
   ]
 

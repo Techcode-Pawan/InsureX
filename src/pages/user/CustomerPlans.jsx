@@ -11,6 +11,7 @@ export default function CustomerPlans() {
       <PageHead
         title="Explore plans"
         sub="Compare what each plan covers and who it's for. When you're ready, apply online and track the decision from your portal."
+        actions={<Link to="/user/companies" className="btn btn-secondary">Our insurers</Link>}
       />
       <DataState loading={loading} error={error} onRetry={reload} empty={data?.length === 0} emptyText="No plans are open for applications right now. Please check back later.">
         <div className="px-grid cols-2">

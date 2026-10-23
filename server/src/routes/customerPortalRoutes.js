@@ -13,12 +13,15 @@ import * as claimService from '../services/claimService.js'
 import * as premiumService from '../services/premiumService.js'
 import * as renewalService from '../services/renewalService.js'
 import * as documentService from '../services/documentService.js'
+import * as beneficiaryService from '../services/beneficiaryService.js'
 import {
   uuidParam,
   customerProfileSchema,
   customerContactSchema,
   selfApplicationSchema,
   selfClaimSchema,
+  selfBeneficiaryCreateSchema,
+  selfBeneficiaryUpdateSchema,
   paymentSubmissionSchema,
   renewalRequestSchema,
   documentUploadMetaSchema,
@@ -135,6 +138,16 @@ router.get('/overview', asyncHandler(async (req, res) => {
       select: { id: true, action: true, summary: true, createdAt: true },
     }),
   ])
+  const [beneficiaryCount, documentsNeedingAction, pendingPayments] = await Promise.all([
+    prisma.beneficiary.count({ where: { policy: { customerId } } }),
+    prisma.document.findMany({
+      where: { customerId, verificationStatus: { in: ['NEEDS_INFO', 'REJECTED'] } },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      select: { id: true, name: true, documentNumber: true, verificationStatus: true, verificationNotes: true },
+    }),
+    prisma.premiumPayment.aggregate({ where: { policy: { customerId }, status: 'PENDING' }, _count: { id: true }, _sum: { amount: true } }),
+  ])
 
   res.json({
     success: true,
@@ -148,6 +161,9 @@ router.get('/overview', asyncHandler(async (req, res) => {
       renewalsDue,
       renewalOpportunities: expiringPolicies.filter((p) => p.renewals.length === 0).map(({ renewals: _r, ...p }) => p),
       recentActivity,
+      beneficiaryCount,
+      documentsNeedingAction,
+      pendingPayments: { count: pendingPayments._count.id, amount: Number(pendingPayments._sum.amount || 0) },
     },
   })
 }))
@@ -285,17 +301,43 @@ router.post('/claims', validate({ body: selfClaimSchema }), asyncHandler(async (
   res.status(201).json({ success: true, message: 'Claim submitted.', data: { id: claim.id, claimNumber: claim.claimNumber, status: claim.status } })
 }))
 
-// ── Beneficiaries (read-only for customers) ───────────────────
+// ── Beneficiaries (customers manage nominees on their own active policies) ──
+const BENEFICIARY_PUBLIC = {
+  id: true, name: true, relationship: true, allocationPercentage: true, phone: true, email: true, dateOfBirth: true,
+  policy: { select: { id: true, policyNumber: true, status: true, policyType: { select: { name: true } } } },
+}
+
 router.get('/beneficiaries', asyncHandler(async (req, res) => {
-  const data = await prisma.beneficiary.findMany({
-    where: ownViaPolicy(req),
-    orderBy: { createdAt: 'asc' },
-    select: {
-      id: true, name: true, relationship: true, allocationPercentage: true, phone: true, email: true,
-      policy: { select: { id: true, policyNumber: true, policyType: { select: { name: true } } } },
-    },
-  })
+  const data = await prisma.beneficiary.findMany({ where: ownViaPolicy(req), orderBy: { createdAt: 'asc' }, select: BENEFICIARY_PUBLIC })
   res.json({ success: true, data })
+}))
+
+async function ownBeneficiary(req) {
+  const b = await prisma.beneficiary.findFirst({ where: { id: req.params.id, ...ownViaPolicy(req) }, select: { id: true, name: true, policyId: true } })
+  if (!b) throw new AppError('Beneficiary not found.', 404)
+  return b
+}
+
+router.post('/beneficiaries', validate({ body: selfBeneficiaryCreateSchema }), asyncHandler(async (req, res) => {
+  const policy = await prisma.insurancePolicy.findFirst({ where: { id: req.body.policyId, customerId: req.user.customerId }, select: { id: true, policyNumber: true } })
+  if (!policy) throw new AppError('Policy not found.', 404)
+  const b = await beneficiaryService.createBeneficiary(req.body) // enforces active policy + 100% allocation rule
+  await recordEvent({ actor: req.user, action: 'BENEFICIARY_ADDED', entityType: 'Beneficiary', entityId: b.id, customerId: req.user.customerId, summary: `Beneficiary added to policy ${policy.policyNumber}.` })
+  res.status(201).json({ success: true, message: 'Beneficiary added.', data: await prisma.beneficiary.findUnique({ where: { id: b.id }, select: BENEFICIARY_PUBLIC }) })
+}))
+
+router.put('/beneficiaries/:id', idParam, validate({ body: selfBeneficiaryUpdateSchema }), asyncHandler(async (req, res) => {
+  const b = await ownBeneficiary(req)
+  await beneficiaryService.updateBeneficiary(b.id, req.body)
+  await recordEvent({ actor: req.user, action: 'BENEFICIARY_UPDATED', entityType: 'Beneficiary', entityId: b.id, customerId: req.user.customerId, summary: `Beneficiary ${b.name} updated.` })
+  res.json({ success: true, message: 'Beneficiary updated.', data: await prisma.beneficiary.findUnique({ where: { id: b.id }, select: BENEFICIARY_PUBLIC }) })
+}))
+
+router.delete('/beneficiaries/:id', idParam, asyncHandler(async (req, res) => {
+  const b = await ownBeneficiary(req)
+  await beneficiaryService.deleteBeneficiary(b.id)
+  await recordEvent({ actor: req.user, action: 'BENEFICIARY_REMOVED', entityType: 'Beneficiary', entityId: b.id, customerId: req.user.customerId, summary: `Beneficiary ${b.name} removed.` })
+  res.json({ success: true, message: 'Beneficiary removed.' })
 }))
 
 // ── Documents ─────────────────────────────────────────────────

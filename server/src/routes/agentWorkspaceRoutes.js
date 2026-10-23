@@ -15,6 +15,7 @@ import * as claimService from '../services/claimService.js'
 import * as premiumService from '../services/premiumService.js'
 import * as renewalService from '../services/renewalService.js'
 import * as documentService from '../services/documentService.js'
+import * as analyticsService from '../services/analyticsService.js'
 import {
   uuidParam,
   agentCustomerCreateSchema,
@@ -23,6 +24,8 @@ import {
   renewalRequestSchema,
   documentUploadMetaSchema,
   agentDocumentReviewSchema,
+  agentProfileUpdateSchema,
+  agentApplicationUpdateSchema,
 } from '../validators/schemas.js'
 
 const router = Router()
@@ -217,6 +220,18 @@ router.get('/applications/:id', idParam, asyncHandler(async (req, res) => {
   res.json({ success: true, data: { ...rest, customer: { id: customer.id, firstName: customer.firstName, lastName: customer.lastName, customerNumber: customer.customerNumber } } })
 }))
 
+// Correct a still-pending application the agent submitted for a customer in their book.
+router.patch('/applications/:id', idParam, validate({ body: agentApplicationUpdateSchema }), asyncHandler(async (req, res) => {
+  const app = await applicationService.getApplicationById(req.params.id, applicationScope(req)) // 404 outside the agent's book
+  if (app.status !== 'PENDING') throw new AppError('Only pending applications can be edited.', 400)
+  const updated = await applicationService.updateApplication(app.id, req.body)
+  await recordEvent({
+    actor: req.user, action: 'APPLICATION_UPDATED', entityType: 'InsuranceApplication', entityId: app.id,
+    customerId: app.customerId, agentId: req.user.agentId, summary: `Application ${app.applicationNumber} updated by servicing agent.`,
+  })
+  res.json({ success: true, message: 'Application updated.', data: updated })
+}))
+
 router.post('/applications', validate({ body: agentApplicationSchema }), asyncHandler(async (req, res) => {
   await assertAssignedCustomer(req, req.body.customerId)
   const app = await applicationService.createApplication({ ...req.body, assistedByAgentId: req.user.agentId }, req.user)
@@ -368,6 +383,46 @@ router.patch('/documents/:id', idParam, validate({ body: agentDocumentReviewSche
 router.get('/documents/:id/download', idParam, asyncHandler(async (req, res) => {
   const { abs, downloadName } = await documentService.resolveDownload(req.params.id, viaCustomer(req))
   res.download(abs, downloadName)
+}))
+
+// ── Analytics (own book only; scope comes from the authenticated agent id) ──
+router.get('/analytics', asyncHandler(async (req, res) => {
+  const data = await analyticsService.getAnalytics({ role: 'AGENT', scopeAgentId: req.user.agentId, query: req.query })
+  res.json({ success: true, data })
+}))
+
+// ── Activity history: events on the agent's customers or linked to the agent ──
+router.get('/activity', asyncHandler(async (req, res) => {
+  const pg = paginate(req.query, { defaultLimit: 25 })
+  const assignedIds = (await prisma.customer.findMany({ where: customersOf(req), select: { id: true } })).map((c) => c.id)
+  const where = { OR: [{ agentId: req.user.agentId }, { customerId: { in: assignedIds } }] }
+  if (req.query.entityType) where.entityType = String(req.query.entityType)
+  const [total, data] = await Promise.all([
+    prisma.activityLog.count({ where }),
+    prisma.activityLog.findMany({
+      where, skip: pg.skip, take: pg.take, orderBy: { createdAt: 'desc' },
+      select: { id: true, action: true, entityType: true, entityId: true, summary: true, actorRole: true, createdAt: true, customerId: true },
+    }),
+  ])
+  res.json({ success: true, ...pageResult(pg, total, data) })
+}))
+
+// ── Own profile ───────────────────────────────────────────────
+const AGENT_PROFILE = {
+  id: true, agentNumber: true, firstName: true, lastName: true, email: true, phone: true, city: true, region: true,
+  licenseNumber: true, specialization: true, status: true, joiningDate: true, commissionRate: true, rating: true, bio: true,
+  company: { select: { name: true } },
+  _count: { select: { assignedCustomers: true, policies: true } },
+}
+router.get('/profile', asyncHandler(async (req, res) => {
+  const data = await prisma.insuranceAgent.findUnique({ where: { id: req.user.agentId }, select: AGENT_PROFILE })
+  res.json({ success: true, data })
+}))
+
+router.patch('/profile', validate({ body: agentProfileUpdateSchema }), asyncHandler(async (req, res) => {
+  const data = await prisma.insuranceAgent.update({ where: { id: req.user.agentId }, data: req.body, select: AGENT_PROFILE })
+  await recordEvent({ actor: req.user, action: 'AGENT_PROFILE_UPDATED', entityType: 'InsuranceAgent', entityId: req.user.agentId, agentId: req.user.agentId, summary: 'Agent updated their contact details.' })
+  res.json({ success: true, message: 'Profile updated.', data })
 }))
 
 // ── Performance (own book only) ───────────────────────────────

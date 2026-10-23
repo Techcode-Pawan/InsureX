@@ -39,13 +39,24 @@ class ApiClient {
     const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), options.timeout || 15000)
+    // A caller-supplied signal (e.g. a component that unmounted or changed filters) also cancels.
+    const { signal: callerSignal, timeout: _t, ...fetchOptions } = options
+    if (callerSignal) {
+      if (callerSignal.aborted) controller.abort()
+      else callerSignal.addEventListener('abort', () => controller.abort(), { once: true })
+    }
     try {
       return await fetch(url, {
-        ...options,
+        ...fetchOptions,
         headers: { ...this.authHeader(), ...(options.headers || {}) },
         signal: controller.signal,
       })
     } catch (err) {
+      if (callerSignal?.aborted) {
+        const cancelled = new Error('Request cancelled.')
+        cancelled.isCancelled = true
+        throw cancelled
+      }
       const error = new Error('Unable to reach the InsureX server. Check your connection and try again.')
       error.isNetworkError = true
       error.cause = err
@@ -84,11 +95,13 @@ class ApiClient {
   // Identical GETs already in flight (same URL and session) share one network request. This stops
   // React StrictMode's double-mount in development, and components asking for the same data at the
   // same moment, from doubling database load. Completed responses are never cached.
-  get(endpoint, params = {}) {
+  // Pass { signal } to make the request cancellable; cancellable requests are not shared.
+  get(endpoint, params = {}, { signal } = {}) {
     const query = new URLSearchParams(
       Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
     ).toString()
     const url = query ? `${endpoint}?${query}` : endpoint
+    if (signal) return this.request(url, { method: 'GET', signal })
     const key = `${this.getToken() || ''} ${url}`
     if (!this.inflight) this.inflight = new Map()
     if (this.inflight.has(key)) return this.inflight.get(key)

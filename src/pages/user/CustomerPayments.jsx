@@ -10,7 +10,10 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Select from '../../components/ui/Select'
 import Modal from '../../components/ui/Modal'
+import { RefreshBar } from '../../components/charts'
 import '../../styles/user.css'
+
+const POLL_MS = 60000
 
 const METHODS = ['UPI', 'NET_BANKING', 'DEBIT_CARD', 'CREDIT_CARD', 'BANK_TRANSFER', 'CHEQUE'].map((m) => ({ value: m, label: titleCase(m) }))
 
@@ -106,8 +109,8 @@ export default function CustomerPayments() {
   const [historyPage, setHistoryPage] = useState(1)
   const [flash, setFlash] = useState(null)
   const gateway = useApi('/me/payment-gateway')
-  const premiums = useApi('/me/premiums', { limit: 100 })
-  const history = useApi('/me/payments', { page: historyPage, limit: 10 })
+  const premiums = useApi('/me/premiums', { limit: 100 }, { pollMs: POLL_MS })
+  const history = useApi('/me/payments', { page: historyPage, limit: 10 }, { pollMs: POLL_MS })
 
   const unpaid = useMemo(
     () => (premiums.data || []).filter((p) => p.status !== 'PAID' && Number(p.remainingBalance) > 0)
@@ -135,7 +138,18 @@ export default function CustomerPayments() {
 
   return (
     <div className="px-page">
-      <PageHead title="Payments" sub="Your premium schedule, what's due next, and every payment you've made." />
+      <PageHead
+        title="Payments"
+        sub="Your premium schedule, what's due next, and every payment you've made."
+        actions={
+          <RefreshBar
+            lastUpdated={premiums.lastUpdated && history.lastUpdated ? new Date(Math.min(premiums.lastUpdated, history.lastUpdated)) : null}
+            refreshing={premiums.refreshing || history.refreshing}
+            onRefresh={() => { premiums.reload(); history.reload() }}
+            pollMs={POLL_MS}
+          />
+        }
+      />
       <div className="cp-stack">
         {flash && <Notice tone="ok">{flash}</Notice>}
         {gateway.data && gateway.data.mode !== 'ONLINE' && (

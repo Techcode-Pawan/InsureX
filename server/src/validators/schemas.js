@@ -320,3 +320,33 @@ export const adminUpdateUserSchema = z.object({
   linkCustomerId: z.string().uuid().nullable().optional(),
   linkAgentId: z.string().uuid().nullable().optional(),
 }).strict()
+
+// ── Agent self-service & customer beneficiary management ──────
+// Agents may edit only their public-facing contact details; licence, commission, status, company
+// and rating remain administrator-controlled.
+export const agentProfileUpdateSchema = z.object({
+  phone: z.string().trim().min(10).max(20),
+  city: z.string().trim().min(1).max(80),
+  bio: z.string().trim().max(1000),
+}).partial().strict()
+
+// Pending applications an agent assisted with can be corrected before underwriting decides.
+export const agentApplicationUpdateSchema = z.object({
+  requestedCoverage: z.number().positive().max(1_000_000_000),
+  annualIncome: z.number().positive().max(10_000_000_000).nullable(),
+  employmentStatus: z.string().trim().max(60).nullable(),
+  nomineeName: z.string().trim().max(120).nullable(),
+  nomineeRelation: z.string().trim().max(60).nullable(),
+  notes: z.string().trim().max(2000).nullable(),
+}).partial().strict()
+
+const beneficiaryFields = {
+  name: z.string().trim().min(2).max(120),
+  relationship: z.string().trim().min(2).max(60),
+  allocationPercentage: z.number().min(1).max(100),
+  phone: z.string().trim().max(20).optional(),
+  email: z.string().trim().email().max(254).optional(),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format must be YYYY-MM-DD').optional(),
+}
+export const selfBeneficiaryCreateSchema = z.object({ policyId: z.string().uuid(), ...beneficiaryFields }).strict()
+export const selfBeneficiaryUpdateSchema = z.object(beneficiaryFields).partial().strict()

@@ -21,4 +21,22 @@ router.get('/policy-types/:id', asyncHandler(async (req, res) => {
   res.json({ success: true, data })
 }))
 
+// Active insurers with public contact details and the plans they currently underwrite.
+router.get('/companies', asyncHandler(async (req, res) => {
+  const companies = await prisma.insuranceCompany.findMany({
+    where: { status: 'ACTIVE' },
+    orderBy: { name: 'asc' },
+    select: {
+      id: true, name: true, shortName: true, category: true, rating: true, description: true,
+      website: true, phone: true, email: true, city: true, state: true,
+      policies: { where: { status: 'ACTIVE' }, select: { policyType: { select: { id: true, name: true } } } },
+    },
+  })
+  const data = companies.map(({ policies, ...c }) => {
+    const plans = new Map(policies.map((p) => [p.policyType.id, p.policyType]))
+    return { ...c, activePolicies: policies.length, plans: [...plans.values()] }
+  })
+  res.json({ success: true, data })
+}))
+
 export default router

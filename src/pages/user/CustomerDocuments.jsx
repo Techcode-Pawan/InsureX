@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Upload, Download, FileText } from 'lucide-react'
 import api from '../../services/apiClient'
@@ -127,7 +128,13 @@ const FILTERS = [
 export default function CustomerDocuments() {
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
-  const [uploadOpen, setUploadOpen] = useState(false)
+  const [params, setParams] = useSearchParams()
+  const [uploadOpen, setUploadOpenState] = useState(() => params.get('upload') === '1')
+  // ?upload=1 (from the dashboard alert) opens the upload dialog; closing clears it from the URL
+  const setUploadOpen = (open) => {
+    setUploadOpenState(open)
+    if (!open && params.get('upload')) setParams({}, { replace: true })
+  }
   const [flash, setFlash] = useState(null)
   const [dlError, setDlError] = useState(null)
   const { data, body, loading, error, reload } = useApi('/me/documents', { page, limit: 15, status })
