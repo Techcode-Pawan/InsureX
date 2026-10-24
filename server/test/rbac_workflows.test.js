@@ -419,5 +419,5 @@ test('16. logout revokes the token; deactivation ends sessions', async () => {
   const fresh = await login(target.email)
   assert.equal((await call('PATCH', `/admin/users/${target.id}`, { token: t.admin, body: { isActive: false } })).status, 200)
   assert.equal((await get('/agent/overview', fresh)).status, 401)
-  assert.equal((await post('/auth/login', null, { email: target.email, password: PW })).status, 401)
+  assert.equal((await post('/auth/login', null, { email: target.email, password: PW })).status, 403, 'deactivated account is refused with an explanation')
 })

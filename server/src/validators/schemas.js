@@ -18,7 +18,18 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().trim().email().max(254),
   password: z.string().min(1, 'Password is required.').max(128),
+  // The portal chosen on the login page; compared with the stored role after authentication.
+  role: z.enum(['ADMIN', 'AGENT', 'CUSTOMER']).optional(),
 })
+
+export const setupTokenSchema = z.object({
+  token: z.string().min(20).max(200),
+}).strict()
+
+export const completeSetupSchema = z.object({
+  token: z.string().min(20).max(200),
+  password: strongPassword,
+}).strict()
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(128),
@@ -119,19 +130,34 @@ export const beneficiarySchema = z.object({
 
 // ── Agent Schema ──────────────────────────────────────────────
 export const agentSchema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  email: z.string().email(),
-  phone: z.string().min(10),
-  city: z.string().min(1),
-  region: z.string().min(1),
-  licenseNumber: z.string().min(3),
-  specialization: z.string().min(2),
-  companyId: z.string().uuid().optional(),
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  email: z.string().trim().email().max(254),
+  phone: z.string().trim().min(10).max(20),
+  city: z.string().trim().min(1).max(80),
+  region: z.string().trim().min(1).max(80),
+  licenseNumber: z.string().trim().min(3).max(40),
+  specialization: z.string().trim().min(2).max(80),
+  department: z.string().trim().max(80).optional(),
+  branch: z.string().trim().max(80).optional(),
+  address: z.string().trim().max(300).optional(),
+  companyId: z.string().uuid().nullable().optional(),
   status: z.enum(['ACTIVE', 'ON_LEAVE', 'INACTIVE']).optional(),
   commissionRate: z.number().min(0).max(50).optional(),
-  bio: z.string().optional(),
+  bio: z.string().max(2000).optional(),
 })
+
+// Admin "Add New Agent": profile + login in one step. There is deliberately no role field:
+// the server always creates the login with role AGENT.
+export const agentCreateSchema = agentSchema.extend({
+  credentialMode: z.enum(['INVITE', 'PASSWORD']).default('INVITE'),
+  temporaryPassword: strongPassword.optional(),
+}).strict().refine((v) => v.credentialMode !== 'PASSWORD' || v.temporaryPassword, {
+  message: 'Enter a temporary password or choose the invitation link.',
+  path: ['temporaryPassword'],
+})
+
+export const agentUpdateSchema = agentSchema.partial().strict()
 
 // ── Claim Schemas ─────────────────────────────────────────────
 export const claimSchema = z.object({

@@ -134,18 +134,22 @@ enum RenewalStatus {
 // ════════════════════════════════════════════════════════════
 
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String
-  role         Role      @default(CUSTOMER)
-  name         String
-  phone        String?
-  isActive     Boolean   @default(true)
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  passwordHash           String
+  role                   Role      @default(CUSTOMER)
+  name                   String
+  phone                  String?
+  isActive               Boolean   @default(true)
   // Incremented on logout / password change / deactivation; JWTs carrying an older value are rejected.
-  tokenVersion Int       @default(0)
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  tokenVersion           Int       @default(0)
+  lastLoginAt            DateTime?
+  // One-time password setup / reset link. Only a SHA-256 hash of the token is stored.
+  passwordSetupTokenHash String?   @unique
+  passwordSetupExpiresAt DateTime?
+  passwordSetupPurpose   String? // INVITE (new account, not yet activated) | RESET
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   customer      Customer?
   agent         InsuranceAgent?
@@ -427,6 +431,9 @@ model InsuranceAgent {
   region         String
   licenseNumber  String            @unique
   specialization String
+  department     String?
+  branch         String?
+  address        String?
   status         AgentStatus       @default(ACTIVE)
   joiningDate    DateTime          @default(now())
   commissionRate Decimal           @default(8.0) @db.Decimal(5, 2)

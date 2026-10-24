@@ -7,6 +7,7 @@ import { AppError } from '../middleware/errorHandler.js'
 import { asyncHandler } from '../lib/asyncHandler.js'
 import { paginate, pageResult } from '../lib/common.js'
 import { recordEvent } from '../lib/events.js'
+import { issueSetupLink } from '../lib/passwordSetup.js'
 import * as dashboardService from '../services/dashboardService.js'
 import * as premiumService from '../services/premiumService.js'
 import * as analyticsService from '../services/analyticsService.js'
@@ -48,6 +49,7 @@ router.get('/activity', asyncHandler(async (req, res) => {
 // ── User accounts & access ────────────────────────────────────
 const USER_SELECT = {
   id: true, email: true, name: true, role: true, phone: true, isActive: true, lastLoginAt: true, createdAt: true,
+  passwordSetupPurpose: true, passwordSetupExpiresAt: true, // never the token hash itself
   customer: { select: { id: true, customerNumber: true, firstName: true, lastName: true } },
   agent: { select: { id: true, agentNumber: true, firstName: true, lastName: true } },
 }
@@ -140,13 +142,33 @@ router.patch('/users/:id', idParam, validate({ body: adminUpdateUserSchema }), a
 
 // Staff-assisted password reset (no email service is configured): sets a temporary password
 // chosen by the admin and signs the user out everywhere. The admin shares it out of band.
+// Preferred reset path: a one-time link (24h) the user opens to choose their own password.
+// No email service is configured, so the link is returned to the admin to deliver securely.
+router.post('/users/:id/reset-link', idParam, asyncHandler(async (req, res) => {
+  const target = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, email: true, isActive: true, passwordSetupPurpose: true } })
+  if (!target) throw new AppError('User not found.', 404)
+  if (target.id === req.user.id) throw new AppError('Use Settings → Change password for your own account.', 400)
+  if (!target.isActive) throw new AppError('Reactivate this login before issuing a reset link.', 400)
+  const link = await prisma.$transaction(async (tx) => {
+    const l = await issueSetupLink(tx, target.id, target.passwordSetupPurpose === 'INVITE' ? 'INVITE' : 'RESET')
+    await recordEvent({ actor: req.user, action: 'PASSWORD_RESET_LINK', entityType: 'User', entityId: target.id, summary: `Password reset link issued for ${target.email}.` }, tx)
+    return l
+  })
+  res.json({ success: true, message: 'One-time link generated. It is shown only once.', data: link })
+}))
+
 router.post('/users/:id/reset-password', idParam, validate({ body: adminResetPasswordSchema }), asyncHandler(async (req, res) => {
   const target = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, email: true } })
   if (!target) throw new AppError('User not found.', 404)
   if (target.id === req.user.id) throw new AppError('Use Settings → Change password for your own account.', 400)
   await prisma.user.update({
     where: { id: target.id },
-    data: { passwordHash: await bcrypt.hash(req.body.temporaryPassword, 12), tokenVersion: { increment: 1 } },
+    // Also cancels any outstanding invitation / reset link
+    data: {
+      passwordHash: await bcrypt.hash(req.body.temporaryPassword, 12),
+      tokenVersion: { increment: 1 },
+      passwordSetupTokenHash: null, passwordSetupExpiresAt: null, passwordSetupPurpose: null,
+    },
   })
   await recordEvent({ actor: req.user, action: 'PASSWORD_RESET', entityType: 'User', entityId: target.id, summary: `Password reset by an administrator for ${target.email}.` })
   res.json({ success: true, message: 'Temporary password set. All existing sessions for this user were signed out.' })
