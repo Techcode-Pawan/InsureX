@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-do
 import {
   LayoutDashboard, Users, FolderOpen, Shield, Wallet, AlertCircle, RefreshCcw,
   Archive, BarChart3, Menu, Search, LogOut, FilePlus2, Bell, History, UserCog, ChevronDown, X,
+  ListChecks,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/apiClient'
@@ -14,6 +15,7 @@ import '../styles/agent.css'
 const NAV = [
   { label: 'Overview', items: [
     { to: '/agent', label: 'Dashboard', icon: LayoutDashboard, end: true },
+    { to: '/agent/tasks', label: 'Tasks & follow-ups', icon: ListChecks },
     { to: '/agent/performance', label: 'My performance', icon: BarChart3 },
   ] },
   { label: 'My book', items: [

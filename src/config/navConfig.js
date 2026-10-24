@@ -48,7 +48,7 @@ export const navSections = [
     items: [
       { label: 'Claims', path: '/admin/claims', icon: AlertCircle },
       { label: 'Claim Processing', path: '/admin/claim-processing', icon: GitPullRequest },
-      { label: 'Agents', path: '/admin/agents', icon: UserCheck },
+      { label: 'Agent Management', path: '/admin/agents', icon: UserCheck },
       { label: 'Beneficiaries', path: '/admin/beneficiaries', icon: Heart },
       { label: 'Documents', path: '/admin/documents', icon: Archive },
       { label: 'Renewals', path: '/admin/renewals', icon: RefreshCcw },

@@ -46,8 +46,8 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('insurex:unauthorized', onUnauthorized)
   }, [clearSession])
 
-  const login = useCallback(async ({ email, password }) => {
-    const result = await authService.login({ email, password })
+  const login = useCallback(async ({ email, password, role }) => {
+    const result = await authService.login({ email, password, role })
     setUser(result.user)
     return result
   }, [])

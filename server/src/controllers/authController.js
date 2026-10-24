@@ -55,3 +55,20 @@ export async function changePassword(req, res, next) {
     next(err)
   }
 }
+
+export async function inspectSetup(req, res, next) {
+  try {
+    res.json({ success: true, data: await authService.inspectSetupToken(req.body.token) })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function completeSetup(req, res, next) {
+  try {
+    const result = await authService.completePasswordSetup(req.body)
+    res.json({ success: true, message: 'Password set. You can now sign in.', data: result })
+  } catch (err) {
+    next(err)
+  }
+}

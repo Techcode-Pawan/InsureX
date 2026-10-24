@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '../config/db.js'
 import { AppError } from '../middleware/errorHandler.js'
 import { signToken } from '../middleware/auth.js'
+import { hashToken } from '../lib/passwordSetup.js'
 
 const BCRYPT_ROUNDS = 12
 const SAFE_USER_SELECT = {
@@ -49,12 +50,27 @@ export async function registerUser({ email, password, name, phone }) {
   return { user: shapeUser(safe), token }
 }
 
-export async function loginUser({ email, password }) {
+const ROLE_LABEL = { ADMIN: 'Admin', AGENT: 'Agent / Staff', CUSTOMER: 'Customer' }
+
+// `role` is the portal the person chose on the login page. It never grants anything: the role stored
+// in the database decides access. It is only compared, after the password is verified, so someone
+// who picked the wrong portal gets a helpful message instead of landing in an unexpected dashboard.
+export async function loginUser({ email, password, role }) {
   const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } })
 
   const isMatch = await bcrypt.compare(password, user?.passwordHash || DUMMY_HASH)
-  if (!user || !isMatch || !user.isActive) {
+  if (!user || !isMatch) {
     throw new AppError('Invalid email or password.', 401)
+  }
+  // Only revealed to someone who already proved they know the password.
+  if (!user.isActive) {
+    throw new AppError('This account has been deactivated. Contact an InsureX administrator to restore access.', 403)
+  }
+  if (role && role !== user.role) {
+    throw new AppError(
+      `This account is not registered for ${ROLE_LABEL[role]} sign-in. Select "${ROLE_LABEL[user.role]}" and try again.`,
+      403
+    )
   }
 
   const updated = await prisma.user.update({
@@ -77,6 +93,45 @@ export async function getCurrentUser(userId) {
 // Revokes every token issued to this user so far.
 export async function revokeSessions(userId) {
   await prisma.user.update({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } })
+}
+
+async function findValidSetupToken(token) {
+  const user = await prisma.user.findUnique({
+    where: { passwordSetupTokenHash: hashToken(token) },
+    select: { id: true, email: true, name: true, role: true, isActive: true, passwordSetupExpiresAt: true, passwordSetupPurpose: true },
+  })
+  if (!user || !user.passwordSetupExpiresAt || user.passwordSetupExpiresAt < new Date()) {
+    throw new AppError('This link is invalid or has expired. Ask an administrator for a new one.', 400)
+  }
+  if (!user.isActive) {
+    throw new AppError('This account has been deactivated. Contact an InsureX administrator.', 403)
+  }
+  return user
+}
+
+// Lets the setup page greet the person without revealing anything for invalid tokens.
+export async function inspectSetupToken(token) {
+  const u = await findValidSetupToken(token)
+  return { email: u.email, name: u.name, role: u.role, purpose: u.passwordSetupPurpose, expiresAt: u.passwordSetupExpiresAt }
+}
+
+// Consumes a one-time link: sets the password, clears the token and ends any existing sessions.
+export async function completePasswordSetup({ token, password }) {
+  const u = await findValidSetupToken(token)
+  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS)
+  // Matching on the token hash makes the link single-use even if submitted twice concurrently.
+  const res = await prisma.user.updateMany({
+    where: { id: u.id, passwordSetupTokenHash: hashToken(token) },
+    data: {
+      passwordHash,
+      passwordSetupTokenHash: null,
+      passwordSetupExpiresAt: null,
+      passwordSetupPurpose: null,
+      tokenVersion: { increment: 1 },
+    },
+  })
+  if (res.count !== 1) throw new AppError('This link has already been used.', 400)
+  return { email: u.email, role: u.role }
 }
 
 export async function changePassword(userId, { currentPassword, newPassword }) {

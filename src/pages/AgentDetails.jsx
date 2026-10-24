@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Pencil, ArrowLeft } from 'lucide-react'
+import { Pencil, ArrowLeft, Link2 } from 'lucide-react'
 import PageHeader from '../components/layout/PageHeader'
 import Button from '../components/ui/Button'
 import { StatusBadge } from '../components/ui/Badge'
 import { Panel, KpiBand, Kpi, Facts, Notice, DataState, Segmented } from '../components/panel'
-import { AgentFormModal } from './Agents'
-import { useApi } from '../lib/useApi'
+import { AgentFormModal, AccessLinkModal, LoginBadge } from './Agents'
+import api from '../services/apiClient'
+import { useApi, useAction } from '../lib/useApi'
 import { inr, inrCompact, date, dateTime, fullName } from '../lib/format'
 
 const TABS = [
@@ -23,6 +24,8 @@ export default function AgentDetails() {
   const [tab, setTab] = useState('assignedCustomers')
   const [editing, setEditing] = useState(false)
   const [message, setMessage] = useState('')
+  const [link, setLink] = useState(null)
+  const linkAction = useAction()
 
   if (loading || error || !a) {
     return (
@@ -32,6 +35,15 @@ export default function AgentDetails() {
       </div>
     )
   }
+
+  async function issueLink() {
+    try {
+      const res = await linkAction.run(() => api.post(`/agents/${a.id}/access-link`))
+      setLink(res.data.data)
+      reload()
+    } catch { /* shown via linkAction.error */ }
+  }
+  const linkLabel = a.loginStatus === 'NONE' ? 'Create login' : a.loginStatus === 'PENDING_ACTIVATION' ? 'New activation link' : 'Password reset link'
 
   const activePolicies = a.policies.filter((p) => p.status === 'ACTIVE')
   const decided = a.assistedApplications.filter((x) => ['APPROVED', 'REJECTED'].includes(x.status))
@@ -45,11 +57,16 @@ export default function AgentDetails() {
         subtitle={<><span className="mono">{a.agentNumber}</span> · {a.specialization} · {a.region}</>}
         actions={<>
           <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={() => navigate('/admin/agents')}>Agents</Button>
+          {a.status !== 'INACTIVE' && a.loginStatus !== 'DISABLED' && (
+            <Button variant="secondary" size="sm" icon={Link2} onClick={issueLink} loading={linkAction.pending}>{linkLabel}</Button>
+          )}
           <Button variant="secondary" size="sm" icon={Pencil} onClick={() => setEditing(true)}>Edit</Button>
         </>}
       />
       {message && <div style={{ marginBottom: 12 }}><Notice tone="ok">{message}</Notice></div>}
-      {!a.user && <div style={{ marginBottom: 12 }}><Notice tone="warn">This agent has no login yet, so they cannot use the agent workspace. <Link to="/admin/access" className="table-link">Create one under Users &amp; Access</Link>.</Notice></div>}
+      {linkAction.error && <div style={{ marginBottom: 12 }}><Notice tone="error">{linkAction.error.message}</Notice></div>}
+      {a.loginStatus === 'NONE' && <div style={{ marginBottom: 12 }}><Notice tone="warn">This agent has no login yet, so they cannot use the agent workspace. Use <strong>Create login</strong> to generate a one-time activation link.</Notice></div>}
+      {a.loginStatus === 'PENDING_ACTIVATION' && <div style={{ marginBottom: 12 }}><Notice>Waiting for this agent to activate their account{a.login?.inviteExpiresAt ? ` (link expires ${dateTime(a.login.inviteExpiresAt)})` : ''}. Generate a new activation link if theirs was lost or expired.</Notice></div>}
 
       <KpiBand cols={4}>
         <Kpi label="Assigned customers" value={a.assignedCustomers.length} />
@@ -62,12 +79,15 @@ export default function AgentDetails() {
         <Facts items={[
           ['Email', a.email],
           ['Phone', a.phone],
+          ['Department', a.department || '—'],
+          ['Branch', a.branch || '—'],
           ['City / region', `${a.city} · ${a.region}`],
+          ['Office address', a.address || '—'],
           ['Licence number', a.licenseNumber],
           ['Company', a.company?.name || '—'],
           ['Commission rate', `${Number(a.commissionRate)}%`],
           ['Joined', date(a.joiningDate)],
-          ['Login', a.user ? `${a.user.email}${a.user.isActive ? '' : ' (deactivated)'}` : 'None'],
+          ['Login', <LoginBadge key="login" status={a.loginStatus} />],
           ['Last sign-in', a.user?.lastLoginAt ? dateTime(a.user.lastLoginAt) : '—'],
         ]} />
         {a.bio && <p className="muted" style={{ margin: '14px 0 0', fontSize: 13.5, lineHeight: 1.55 }}>{a.bio}</p>}
@@ -128,6 +148,7 @@ export default function AgentDetails() {
         )}
       </Panel>
 
+      <AccessLinkModal link={link} agentName={fullName(a)} onClose={() => setLink(null)} />
       <AgentFormModal open={editing} agent={a} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); setMessage('Agent profile updated.'); reload() }} />
     </div>
   )

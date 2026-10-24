@@ -16,8 +16,9 @@ function cacheUser(user) {
 }
 
 export const authService = {
-  async login({ email, password }) {
-    const response = await api.post('/auth/login', { email, password })
+  // `role` is the portal chosen on the login page; the server checks it against the account's real role.
+  async login({ email, password, role }) {
+    const response = await api.post('/auth/login', { email, password, role })
     const { user, token } = response.data.data
     api.setToken(token)
     cacheUser(user)

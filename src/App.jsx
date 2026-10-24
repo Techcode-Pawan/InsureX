@@ -12,6 +12,8 @@ import CustomerLayout from './layouts/CustomerLayout'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import NotFound from './pages/NotFound'
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const SetupPassword = lazy(() => import('./pages/SetupPassword'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 
 // ── Admin console (/admin) — existing operations pages ──
@@ -56,6 +58,7 @@ const AgentDocuments = lazy(() => import('./pages/agent/AgentDocuments'))
 const AgentPerformance = lazy(() => import('./pages/agent/AgentPerformance'))
 const AgentActivity = lazy(() => import('./pages/agent/AgentActivity'))
 const AgentProfile = lazy(() => import('./pages/agent/AgentProfile'))
+const AgentTasks = lazy(() => import('./pages/agent/AgentTasks'))
 const CustomerCompanies = lazy(() => import('./pages/user/CustomerCompanies'))
 
 // ── Customer portal (/user) ──
@@ -100,6 +103,13 @@ function LegacyAdminRedirect() {
   return <Navigate to={path + search} replace />
 }
 
+// Conventional dashboard URLs map onto this app's panel roots. Role guards still apply after the redirect.
+function CustomerPathRedirect() {
+  const { pathname, search } = useLocation()
+  const rest = pathname.replace(/^\/customer(\/dashboard)?/, '')
+  return <Navigate to={`/user${rest}${search}`} replace />
+}
+
 const LEGACY_ADMIN_PATHS = [
   '/dashboard', '/customers/*', '/policies/*', '/policy-types', '/applications', '/premiums', '/payments',
   '/claims/*', '/claim-processing', '/agents/*', '/beneficiaries', '/documents', '/renewals',
@@ -116,6 +126,12 @@ export default function App() {
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/setup-password" element={<SetupPassword />} />
+          <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+          <Route path="/agent/dashboard" element={<Navigate to="/agent" replace />} />
+          <Route path="/customer/dashboard" element={<Navigate to="/user" replace />} />
+          <Route path="/customer/*" element={<CustomerPathRedirect />} />
           {LEGACY_ADMIN_PATHS.map((p) => <Route key={p} path={p} element={<LegacyAdminRedirect />} />)}
 
           {/* ADMIN */}
@@ -167,6 +183,7 @@ export default function App() {
               <Route path="performance" element={<AgentPerformance />} />
               <Route path="activity" element={<AgentActivity />} />
               <Route path="profile" element={<AgentProfile />} />
+              <Route path="tasks" element={<AgentTasks />} />
               <Route path="notifications" element={<NotificationsPage />} />
             </Route>
           </Route>

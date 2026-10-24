@@ -21,6 +21,23 @@ InsureX is an enterprise-grade Insurance Management System designed for underwri
 
 Backend tests (real database, fictional fixtures cleaned up afterwards): `cd server && npm test`.
 
+
+## Role-based sign-in & Agent Management
+
+* **Login** (`/login`): choose **Admin**, **Agent / Staff** or **Customer**. The server verifies the password first, then
+  compares the chosen portal with the role stored in the database; a mismatch is refused with a message and no session.
+  Deactivated accounts are refused. The selection never grants permissions: every API route checks the stored role.
+* **Admin → Agent Management** (`/admin/agents`): add, view, edit, deactivate/reactivate agents. *Add new agent* creates
+  the agent profile and an `AGENT` login in one transaction (agent ID auto-generated, duplicate emails refused).
+  Credentials: a one-time **invitation link** (72 h, recommended) or an admin-set temporary password.
+* **One-time links** (`/setup-password?token=...`): used for invitations and password resets (Admin → Users & Access →
+  *Reset link*, 24 h). Only a SHA-256 hash of the token is stored; links are single-use. **No email service is
+  configured**, so the admin copies the link and shares it; nothing is emailed. Links are built from `CLIENT_URL`.
+* Deactivating an agent disables the login and ends all sessions; reactivating restores it. Records are never deleted.
+* Dashboard URL aliases: `/admin/dashboard` → `/admin`, `/agent/dashboard` → `/agent`, `/customer/dashboard` → `/user`.
+* Forgot password (`/forgot-password`) explains the admin-issued reset process; the only-admin fallback is
+  `cd server && npm run reset-admin`.
+
 ## 1. Technology Stack
 
 - **Frontend:** React 19, Vite, Tailwind CSS v4, React Router v7, Lucide Icons, Recharts, Framer Motion

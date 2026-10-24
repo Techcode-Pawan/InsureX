@@ -11,6 +11,7 @@ import { useApi, useAction } from '../../lib/useApi'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/apiClient'
 import { dateTime, fullName } from '../../lib/format'
+import { AccessLinkModal } from '../Agents'
 
 const ROLE_VARIANT = { ADMIN: 'purple', AGENT: 'blue', CUSTOMER: 'gray' }
 
@@ -141,9 +142,22 @@ export default function AccessManagement() {
   const [creating, setCreating] = useState(false)
   const [linking, setLinking] = useState(null)
   const [resetting, setResetting] = useState(null)
+  const [resetLink, setResetLink] = useState(null)
   const [confirm, setConfirm] = useState(null) // { user, kind: 'deactivate'|'activate'|'revoke'|'unlink' }
   const [message, setMessage] = useState('')
   const action = useAction()
+
+  // One-time link the user opens to choose their own password (preferred over a temporary password).
+  async function issueResetLink(u) {
+    try {
+      const res = await action.run(() => api.post(`/admin/users/${u.id}/reset-link`))
+      setResetLink({ ...res.data.data, name: u.name })
+      reload()
+    } catch (err) {
+      setMessage('')
+      action.setError(err)
+    }
+  }
 
   async function runConfirm() {
     const { user, kind } = confirm
@@ -170,6 +184,7 @@ export default function AccessManagement() {
         actions={<Button icon={UserPlus} onClick={() => setCreating(true)}>Create staff login</Button>}
       />
       {message && <div style={{ marginBottom: 12 }}><Notice tone="ok">{message}</Notice></div>}
+      {action.error && !confirm && <div style={{ marginBottom: 12 }}><Notice tone="error">{action.error.message}</Notice></div>}
 
       <Panel flush>
         <div className="filters">
@@ -195,12 +210,15 @@ export default function AccessManagement() {
                       {u.role === 'ADMIN' && <span className="muted">—</span>}
                     </td>
                     <td className="nowrap">{u.lastLoginAt ? dateTime(u.lastLoginAt) : <span className="muted">Never</span>}</td>
-                    <td>{u.isActive ? <Badge variant="green" dot>Active</Badge> : <Badge variant="gray" dot>Deactivated</Badge>}</td>
+                    <td>{!u.isActive ? <Badge variant="gray" dot>Deactivated</Badge>
+                      : u.passwordSetupPurpose === 'INVITE' ? <Badge variant="yellow" dot>Pending activation</Badge>
+                      : <Badge variant="green" dot>Active</Badge>}</td>
                     <td className="nowrap" style={{ textAlign: 'right' }}>
                       {u.role === 'CUSTOMER' && !u.customer && <Button size="sm" variant="secondary" onClick={() => setLinking(u)}>Link record</Button>}
                       {u.role === 'CUSTOMER' && u.customer && <Button size="sm" variant="ghost" onClick={() => setConfirm({ user: u, kind: 'unlink' })}>Unlink</Button>}
                       {' '}
-                      {u.id !== me?.id && <Button size="sm" variant="ghost" onClick={() => setResetting(u)}>Reset password</Button>}
+                      {u.id !== me?.id && u.isActive && <Button size="sm" variant="ghost" onClick={() => issueResetLink(u)}>Reset link</Button>}
+                      {u.id !== me?.id && <Button size="sm" variant="ghost" onClick={() => setResetting(u)}>Temp password</Button>}
                       <Button size="sm" variant="ghost" onClick={() => setConfirm({ user: u, kind: 'revoke' })}>Sign out</Button>
                       {u.id !== me?.id && (u.isActive
                         ? <Button size="sm" variant="ghost" style={{ color: '#B91C1C' }} onClick={() => setConfirm({ user: u, kind: 'deactivate' })}>Deactivate</Button>
@@ -217,6 +235,7 @@ export default function AccessManagement() {
 
       <CreateLoginModal open={creating} onClose={() => setCreating(false)} onCreated={(msg) => { setCreating(false); setMessage(msg); reload() }} />
       <LinkCustomerModal user={linking} onClose={() => setLinking(null)} onDone={(msg) => { setLinking(null); setMessage(msg); reload() }} />
+      <AccessLinkModal link={resetLink} agentName={resetLink?.name} onClose={() => setResetLink(null)} />
       <ResetPasswordModal user={resetting} onClose={() => setResetting(null)} onDone={(msg) => { setResetting(null); setMessage(msg) }} />
       <ConfirmDialog
         open={Boolean(confirm)}
